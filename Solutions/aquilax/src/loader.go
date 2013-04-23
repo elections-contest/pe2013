@@ -8,7 +8,11 @@ import (
 	"os"
 )
 
-func loadFile (file_name string, callback func([]string)) {
+type Interface interface {
+	Add([]string)
+}
+
+func loadFile (data Interface, file_name string) {
 	f, err := os.Open(file_name)
 	if err != nil {
 		log.Print(err)
@@ -28,6 +32,6 @@ func loadFile (file_name string, callback func([]string)) {
 			log.Print(err)
 			os.Exit(FILE_READ_ERROR)
 		}
-		callback(record)
+		data.Add(record)
 	}
 }
