@@ -16,7 +16,7 @@ func NewMirs() Mirs {
 	return make(Mirs)
 }
 
-func (m Mirs) add (record []string) {
+func (m Mirs) Add (record []string) {
 	id, _ := strconv.Atoi(record[0]);
 	mandates, _ := strconv.Atoi(record[2]);
 	m[id] = Mir{id, record[1], mandates}
@@ -24,5 +24,5 @@ func (m Mirs) add (record []string) {
 
 func (m Mirs) Load(path string) {
 	file_name := path + MIR_FILENAME
-	loadFile(file_name, m.add)
+	loadFile(m, file_name)
 }
