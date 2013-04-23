@@ -1,11 +1,7 @@
 package main
 
 import (
-	"bufio"
-	"encoding/csv"
-	"io"
-	"log"
-	"os"
+	"strconv"
 )
 
 type Mir struct {
@@ -14,32 +10,19 @@ type Mir struct {
 	mandates int
 }
 
-type Mirs []int
+type Mirs map[int]Mir
 
-func NewMirs() *Mirs {
-	return &Mirs{}
+func NewMirs() Mirs {
+	return make(Mirs)
+}
+
+func (m Mirs) add (record []string) {
+	id, _ := strconv.Atoi(record[0]);
+	mandates, _ := strconv.Atoi(record[2]);
+	m[id] = Mir{id, record[1], mandates}
 }
 
 func (m Mirs) Load(path string) {
-	f, err := os.Open(path + MIR_FILENAME)
-	if err != nil {
-		log.Print(err)
-	}
-	defer f.Close()
-
-	reader := bufio.NewReader(f)
-	csv_reader := csv.NewReader(reader)
-	csv_reader.Comma = ';'
-	for {
-		record, err := csv_reader.Read()
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			log.Print(err)
-			os.Exit(FILE_READ_ERROR)
-		}
-		print(record)
-	}
+	file_name := path + MIR_FILENAME
+	loadFile(file_name, m.add)
 }

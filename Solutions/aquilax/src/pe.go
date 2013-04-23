@@ -2,7 +2,7 @@ package main
 
 type Pe struct {
 	path string
-	mirs *Mirs
+	mirs Mirs
 }
 
 func NewPe(path string) *Pe {
