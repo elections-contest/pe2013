@@ -20,6 +20,7 @@ func (m Mirs) Add(record []string) {
 	id, _ := strconv.Atoi(record[0])
 	mandates, _ := strconv.Atoi(record[2])
 	m[id] = Mir{id, record[1], mandates}
+	global.total_mandates += mandates
 }
 
 func (m Mirs) Load(path string) {

@@ -1,5 +1,7 @@
 package main
 
+var global Global
+
 func main() {
 	// TODO: Command line param
 	path := "../../../Tests/1/"

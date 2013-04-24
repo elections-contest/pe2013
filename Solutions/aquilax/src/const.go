@@ -10,3 +10,7 @@ const (
 	CANDIDATE_FILENAME = "Candidates.txt"
 	VOTE_FILENAME      = "Votes.txt"
 )
+
+const (
+	VOTE_BAREER = 0.04
+)
