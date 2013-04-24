@@ -12,7 +12,7 @@ type Interface interface {
 	Add([]string)
 }
 
-func loadFile (data Interface, file_name string) {
+func loadFile(data Interface, file_name string) {
 	f, err := os.Open(file_name)
 	if err != nil {
 		log.Print(err)
