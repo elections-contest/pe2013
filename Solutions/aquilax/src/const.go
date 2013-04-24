@@ -5,6 +5,7 @@ const (
 )
 
 const (
-	MIR_FILENAME     = "MIRs.txt"
-	PARTIES_FILENAME = "Parties.txt"
+	MIR_FILENAME       = "MIRs.txt"
+	PARTIES_FILENAME   = "Parties.txt"
+	CANDIDATE_FILENAME = "Candidates.txt"
 )
