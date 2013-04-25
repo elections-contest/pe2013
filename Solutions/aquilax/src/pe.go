@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 type Pe struct {
 	path       string
 	mirs       Mirs
@@ -36,14 +32,13 @@ func loadData() bool {
 func processData() bool {
 	// minimum votes to qualify
 	pe.global.min_votes = float64(pe.global.total_votes) * VOTE_BAREER
-	// TODO:remove parties below min_votes
-	fmt.Println(pe.global.total_votes)
+
+	// remove parties below min_votes
 	removePartiesBelowMinVotesLimit(int(pe.global.min_votes))
-	// TODO:get new total_votes
-	fmt.Println(pe.global.total_votes)
 
 	// calculate quota
 	pe.global.hare_quota = float64(pe.global.total_votes) / float64(pe.global.total_mandates)
+
 	// Process Data
 	return true
 }
