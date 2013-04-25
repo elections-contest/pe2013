@@ -4,24 +4,39 @@ import (
 	"strconv"
 )
 
+/*
 type Vote struct {
 	mir_id       int
 	candidate_id int
 	votes        int
 }
+*/
 
-// Map of Maps should be better here
-type Votes []Vote
+type MirVotes map[int]int
+
+func NewMirVotes() MirVotes {
+	return make(MirVotes)
+}
+
+type Votes map[int]MirVotes
 
 func NewVotes() Votes {
-	return make(Votes, 0, 0)
+	return make(Votes)
 }
 
 func (v Votes) Add(record []string) {
 	mir_id, _ := strconv.Atoi(record[0])
 	candidate_id, _ := strconv.Atoi(record[1])
 	votes, _ := strconv.Atoi(record[2])
-	v = append(v, Vote{mir_id, candidate_id, votes})
+
+	mir, ok := v[mir_id]
+	if !ok {
+		mir = NewMirVotes()
+		v[mir_id] = mir
+	}
+	// set candidate's votes
+	mir[candidate_id] = votes
+
 	// aggregate
 	pe.global.total_votes += votes
 	pe.global.candidate_votes.Add(candidate_id, votes)
@@ -34,10 +49,18 @@ func (v Votes) Load(path string) {
 }
 
 func (v Votes) RemoveCandidate(mir_id, candidate_id int) {
-	for index, vote := range v {
-		if vote.mir_id == mir_id && vote.candidate_id == candidate_id {
-			v[index] = v[len(v)-1]
-			v = v[0 : len(v)-1]
+	mir, ok := v[mir_id]
+	if ok {
+		votes, ok := mir[candidate_id]
+		if ok {
+			delete(mir, candidate_id)
+			// Decrease the total votes with the removed candidate's votes
+			print(votes)
+			print("\t")
+			print(pe.global.total_votes)
+			print("\n")
+			pe.global.total_votes -= votes
 		}
+		delete(v, mir_id)
 	}
 }

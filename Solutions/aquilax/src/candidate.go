@@ -14,10 +14,10 @@ type Candidate struct {
 	cand_type     CandType
 }
 
-type Candidates []Candidate
+type Candidates map[string]Candidate
 
 func NewCandidates() Candidates {
-	return make(Candidates, 0, 0)
+	return make(Candidates)
 }
 
 func (c Candidates) Add(record []string) {
@@ -28,7 +28,7 @@ func (c Candidates) Add(record []string) {
 	if pe.parties.Exists(candidate_id) {
 		cand_type = CandType(CANDIDATE_PARTY)
 	}
-	c = append(c, Candidate{mir_id, candidate_id, candidate_num, record[3], cand_type})
+	c[key(mir_id, candidate_id)] = Candidate{mir_id, candidate_id, candidate_num, record[3], cand_type}
 }
 
 func (c Candidates) Load(path string) {
@@ -37,10 +37,9 @@ func (c Candidates) Load(path string) {
 }
 
 func (c Candidates) RemoveParty(party_id int) {
-	for index, candidate := range c {
+	for key, candidate := range c {
 		if candidate.candidate_id == party_id {
-			c[index] = c[len(c)-1]
-			c = c[0 : len(c)-1]
+			delete(c, key)
 		}
 		pe.votes.RemoveCandidate(candidate.mir_id, candidate.candidate_id)
 	}

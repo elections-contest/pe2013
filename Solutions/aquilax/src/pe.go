@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 type Pe struct {
 	path       string
 	mirs       Mirs
@@ -20,7 +24,7 @@ func NewPe(path string) Pe {
 	return pe
 }
 
-func (pe Pe) loadData() bool {
+func loadData() bool {
 	// Load Data
 	pe.mirs.Load(pe.path)
 	pe.parties.Load(pe.path)
@@ -29,12 +33,14 @@ func (pe Pe) loadData() bool {
 	return true
 }
 
-func (pe Pe) processData() bool {
+func processData() bool {
 	// minimum votes to qualify
 	pe.global.min_votes = float64(pe.global.total_votes) * VOTE_BAREER
 	// TODO:remove parties below min_votes
-	pe.removePartiesBelowMinVotesLimit(int(pe.global.min_votes))
+	fmt.Println(pe.global.total_votes)
+	removePartiesBelowMinVotesLimit(int(pe.global.min_votes))
 	// TODO:get new total_votes
+	fmt.Println(pe.global.total_votes)
 
 	// calculate quota
 	pe.global.hare_quota = float64(pe.global.total_votes) / float64(pe.global.total_mandates)
@@ -42,7 +48,7 @@ func (pe Pe) processData() bool {
 	return true
 }
 
-func (pe Pe) removePartiesBelowMinVotesLimit(min_votes int) {
+func removePartiesBelowMinVotesLimit(min_votes int) {
 	for candidate_id, votes := range pe.global.candidate_votes {
 		candidate_type := pe.parties.getCandidateType(candidate_id)
 		if candidate_type == CANDIDATE_PARTY && votes < min_votes {
@@ -51,6 +57,6 @@ func (pe Pe) removePartiesBelowMinVotesLimit(min_votes int) {
 	}
 }
 
-func (pe Pe) saveData() {
+func saveData() {
 	// Save Data
 }

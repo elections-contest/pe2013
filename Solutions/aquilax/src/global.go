@@ -26,3 +26,8 @@ func (a Aggregator) Add(key, value int) {
 	old_value, _ := a[key]
 	a[key] = old_value + value
 }
+
+// Generates map's key
+func key(v1, v2 int) string {
+	return string(v1) + "_" + string(v2)
+}
