@@ -5,13 +5,13 @@ type Global struct {
 	total_mandates  int        // total mandates
 	min_votes       float64    // minmum required votes to qualify
 	hare_quota      float64    // Hare's quota
-	party_votes     Aggregator // total votes per party
+	candidate_votes Aggregator // total votes per party
 	mir_total_votes Aggregator // total votes per MIR used in II.9
 }
 
 func NewGlobal() Global {
 	var global Global
-	global.party_votes = NewAggregator()
+	global.candidate_votes = NewAggregator()
 	global.mir_total_votes = NewAggregator()
 	return global
 }

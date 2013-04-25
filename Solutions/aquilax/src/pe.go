@@ -33,12 +33,22 @@ func (pe Pe) processData() bool {
 	// minimum votes to qualify
 	pe.global.min_votes = float64(pe.global.total_votes) * VOTE_BAREER
 	// TODO:remove parties below min_votes
+	pe.removePartiesBelowMinVotesLimit(int(pe.global.min_votes))
 	// TODO:get new total_votes
 
 	// calculate quota
 	pe.global.hare_quota = float64(pe.global.total_votes) / float64(pe.global.total_mandates)
 	// Process Data
 	return true
+}
+
+func (pe Pe) removePartiesBelowMinVotesLimit(min_votes int) {
+	for candidate_id, votes := range pe.global.candidate_votes {
+		candidate_type := pe.parties.getCandidateType(candidate_id)
+		if candidate_type == CANDIDATE_PARTY && votes < min_votes {
+			pe.parties.Remove(candidate_id)
+		}
+	}
 }
 
 func (pe Pe) saveData() {

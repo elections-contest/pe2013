@@ -29,3 +29,16 @@ func (p Parties) Exists(party_id int) bool {
 	_, ok := p[party_id]
 	return ok
 }
+
+func (p Parties) Remove(party_id int) {
+	delete(p, party_id)
+	pe.candidates.RemoveParty(party_id)
+}
+
+func (p Parties) getCandidateType(candidate_id int) CandType {
+	_, ok := p[candidate_id]
+	if ok {
+		return CANDIDATE_PARTY
+	}
+	return CANDIDATE_INDIPENDENT
+}
