@@ -6,6 +6,7 @@ type Pe struct {
 	parties    Parties
 	candidates Candidates
 	votes      Votes
+	results    Results
 	global     Global
 }
 
@@ -16,6 +17,7 @@ func NewPe(path string) Pe {
 	pe.parties = NewParties()
 	pe.candidates = NewCandidates()
 	pe.votes = NewVotes()
+	pe.results = NewResults()
 	pe.global = NewGlobal()
 	return pe
 }
@@ -49,6 +51,20 @@ func processData() bool {
 func processIndependentCandidates() {
 	if len(pe.global.icandidates) == 0 {
 		return
+	}
+	for _, icandidate := range pe.global.icandidates {
+		mir_id := icandidate.mir_id
+		mirIQuota := int(pe.global.mir_total_votes[mir_id] / pe.mirs[mir_id].mandates)
+
+		if icandidate.votes >= mirIQuota {
+			// Winner (single mandate for Indie)
+			pe.results.Add(mir_id, icandidate.candidate_id, INDIVIDUAL_MANDATES)
+			pe.global.total_mandates -= INDIVIDUAL_MANDATES
+			mir, ok := pe.mirs[mir_id]
+			if ok {
+				mir.mandates -= INDIVIDUAL_MANDATES
+			}
+		}
 	}
 }
 
