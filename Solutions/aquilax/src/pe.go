@@ -30,6 +30,9 @@ func loadData() bool {
 }
 
 func processData() bool {
+
+	processIndipendentCandidates()
+
 	// minimum votes to qualify
 	pe.global.min_votes = float64(pe.global.total_votes) * VOTE_BAREER
 
@@ -41,6 +44,9 @@ func processData() bool {
 
 	// Process Data
 	return true
+}
+
+func processIndipendentCandidates() {
 }
 
 func removePartiesBelowMinVotesLimit(min_votes int) {

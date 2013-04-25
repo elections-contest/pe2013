@@ -24,7 +24,7 @@ func (c Candidates) Add(record []string) {
 	mir_id, _ := strconv.Atoi(record[0])
 	candidate_id, _ := strconv.Atoi(record[1])
 	candidate_num, _ := strconv.Atoi(record[2])
-	cand_type := CandType(CANDIDATE_INDIPENDENT)
+	cand_type := CandType(CANDIDATE_INDEPENDENT)
 	if pe.parties.Exists(candidate_id) {
 		cand_type = CandType(CANDIDATE_PARTY)
 	}

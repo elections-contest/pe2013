@@ -40,5 +40,5 @@ func (p Parties) getCandidateType(candidate_id int) CandType {
 	if ok {
 		return CANDIDATE_PARTY
 	}
-	return CANDIDATE_INDIPENDENT
+	return CANDIDATE_INDEPENDENT
 }
