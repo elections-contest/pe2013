@@ -40,7 +40,9 @@ func (c Candidates) RemoveParty(party_id int) {
 	for key, candidate := range c {
 		if candidate.candidate_id == party_id {
 			delete(c, key)
+			pe.votes.RemoveVotesForCandidate(candidate.mir_id, candidate.candidate_id)
 		}
-		pe.votes.RemoveCandidate(candidate.mir_id, candidate.candidate_id)
 	}
+	// Remove votes abroad for party
+	pe.votes.RemoveVotesForCandidate(pe.global.abroad_mir_id, party_id)
 }

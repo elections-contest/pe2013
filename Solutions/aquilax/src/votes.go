@@ -48,7 +48,7 @@ func (v Votes) Load(path string) {
 	loadFile(v, file_name)
 }
 
-func (v Votes) RemoveCandidate(mir_id, candidate_id int) {
+func (v Votes) RemoveVotesForCandidate(mir_id, candidate_id int) {
 	mir, ok := v[mir_id]
 	if ok {
 		votes, ok := mir[candidate_id]

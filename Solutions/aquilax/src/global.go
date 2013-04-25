@@ -1,6 +1,7 @@
 package main
 
 type Global struct {
+	abroad_mir_id   int        // mir_id for votes abroad
 	total_votes     int        // total votes
 	total_mandates  int        // total mandates
 	min_votes       float64    // minmum required votes to qualify
