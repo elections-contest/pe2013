@@ -27,6 +27,8 @@ func (c Candidates) Add(record []string) {
 	cand_type := CandType(CANDIDATE_INDEPENDENT)
 	if pe.parties.Exists(candidate_id) {
 		cand_type = CandType(CANDIDATE_PARTY)
+		// Add to list of independent candidates
+		pe.global.icandidates.Add(mir_id, candidate_id)
 	}
 	c[key(mir_id, candidate_id)] = Candidate{mir_id, candidate_id, candidate_num, record[3], cand_type}
 }

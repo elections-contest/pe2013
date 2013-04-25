@@ -37,6 +37,9 @@ func (v Votes) Add(record []string) {
 	// set candidate's votes
 	mir[candidate_id] = votes
 
+	// set independent votes (if aplicable)
+	pe.global.icandidates.SetVote(mir_id, candidate_id, votes)
+
 	// aggregate
 	pe.global.total_votes += votes
 	pe.global.candidate_votes.Add(candidate_id, votes)
