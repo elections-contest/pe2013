@@ -6,6 +6,7 @@ type Pe struct {
 	parties    Parties
 	candidates Candidates
 	votes      Votes
+	global     Global
 }
 
 func NewPe(path string) Pe {
@@ -15,6 +16,7 @@ func NewPe(path string) Pe {
 	pe.parties = NewParties()
 	pe.candidates = NewCandidates()
 	pe.votes = NewVotes()
+	pe.global = NewGlobal()
 	return pe
 }
 
@@ -29,12 +31,12 @@ func (pe Pe) loadData() bool {
 
 func (pe Pe) processData() bool {
 	// minimum votes to qualify
-	global.min_votes = float64(global.total_votes) * VOTE_BAREER
+	pe.global.min_votes = float64(pe.global.total_votes) * VOTE_BAREER
 	// TODO:remove parties below min_votes
 	// TODO:get new total_votes
 
 	// calculate quota
-	global.hare_quota = float64(global.total_votes) / float64(global.total_mandates)
+	pe.global.hare_quota = float64(pe.global.total_votes) / float64(pe.global.total_mandates)
 	// Process Data
 	return true
 }

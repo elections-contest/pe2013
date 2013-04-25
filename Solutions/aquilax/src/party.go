@@ -24,3 +24,8 @@ func (p Parties) Load(path string) {
 	file_name := path + PARTIES_FILENAME
 	loadFile(p, file_name)
 }
+
+func (p Parties) Exists(party_id int) bool {
+	_, ok := p[party_id]
+	return ok
+}
