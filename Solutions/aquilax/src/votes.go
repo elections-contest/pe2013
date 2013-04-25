@@ -22,6 +22,7 @@ func (v Votes) Add(record []string) {
 	votes, _ := strconv.Atoi(record[2])
 	v[mir_id] = Vote{mir_id, candidate_id, votes}
 	global.total_votes += votes
+	global.party_votes.Add(candidate_id, votes)
 }
 
 func (v Votes) Load(path string) {

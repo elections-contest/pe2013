@@ -9,6 +9,17 @@ type Party struct {
 	name string
 }
 
+type PartyVotes map[int]int
+
+func NewPartyVotes() PartyVotes {
+	return make(PartyVotes)
+}
+
+func (pv PartyVotes) Add(party_id, votes int) {
+	val, _ := pv[party_id]
+	pv[party_id] = val + votes
+}
+
 type Parties map[int]Party
 
 func NewParties() Parties {
