@@ -21,4 +21,5 @@ const (
 const (
 	VOTE_BAREER         = 0.04
 	INDIVIDUAL_MANDATES = 1
+	REMAINDER_PRECISION = 4
 )
