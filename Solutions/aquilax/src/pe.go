@@ -52,6 +52,12 @@ func processData() bool {
 
 	processPartyProportionalMandates(hare_quota)
 
+	// remove votes abroad
+	pe.votes.RemoveAbroad(pe.global.abroad_mir_id)
+fmt.Println(pe.votes)
+	hare_table := NewHareTable()
+	hare_table.Generate(pe.votes)
+	fmt.Print(hare_table)
 	// Process Data
 	return true
 }

@@ -4,18 +4,18 @@ import (
 	"strconv"
 )
 
-/*
-type Vote struct {
-	mir_id       int
-	candidate_id int
-	votes        int
-}
-*/
-
 type MirVotes map[int]int
 
 func NewMirVotes() MirVotes {
 	return make(MirVotes)
+}
+
+func (mv MirVotes) TotalVotes() int {
+	result := 0
+	for _, votes := range mv {
+		result += votes
+	}
+	return result
 }
 
 type Votes map[int]MirVotes
@@ -66,4 +66,8 @@ func (v Votes) RemoveVotesForCandidate(mir_id, candidate_id int) {
 		}
 		delete(v, mir_id)
 	}
+}
+
+func (v Votes) RemoveAbroad(abroad_mir_id int) {
+	delete(v, abroad_mir_id)
 }
