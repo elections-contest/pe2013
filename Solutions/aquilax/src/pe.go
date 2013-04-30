@@ -8,27 +8,25 @@ import (
 
 type Pe struct {
 	path       string
-	mirs       Mirs
-	parties    Parties
-	candidates Candidates
-	votes      Votes
-	results    Results
-	global     Global
+	mirs       *Mirs
+	parties    *Parties
+	candidates *Candidates
+	votes      *Votes
+	results    *Results
 }
 
-func NewPe(path string) Pe {
+func NewPe(path string) *Pe {
 	var pe Pe
 	pe.path = path
 	pe.mirs = NewMirs()
 	pe.parties = NewParties()
-	pe.candidates = NewCandidates()
 	pe.votes = NewVotes()
+	pe.candidates = NewCandidates(pe.parties, pe.votes)
 	pe.results = NewResults()
-	pe.global = NewGlobal()
-	return pe
+	return &pe
 }
 
-func loadData() bool {
+func (pe *Pe) loadData() bool {
 	// Load Data
 	pe.mirs.Load(pe.path)
 	pe.parties.Load(pe.path)
@@ -37,24 +35,25 @@ func loadData() bool {
 	return true
 }
 
-func processData() bool {
+func (pe *Pe) processData() bool {
 
-	processIndependentCandidates()
+	pe.processIndependentCandidates()
 
 	// minimum votes to qualify
-	pe.global.min_votes = float64(pe.global.total_votes) * VOTE_BAREER
+	global.min_votes = float64(global.total_votes) * VOTE_BAREER
 
 	// remove parties below min_votes
-	removePartiesBelowMinVotesLimit(int(pe.global.min_votes))
+	pe.removePartiesBelowMinVotesLimit(int(global.min_votes))
 
 	// calculate quota
-	hare_quota := float64(pe.global.total_votes) / float64(pe.global.total_mandates)
+	hare_quota := float64(global.total_votes) / float64(global.total_mandates)
 
-	processPartyProportionalMandates(hare_quota)
+	pe.processPartyProportionalMandates(hare_quota)
 
+	fmt.Println(pe.votes)
 	// remove votes abroad
-	pe.votes.RemoveAbroad(pe.global.abroad_mir_id)
-fmt.Println(pe.votes)
+	pe.votes.RemoveAbroad(global.abroad_mir_id)
+	fmt.Println(&pe.votes)
 	hare_table := NewHareTable()
 	hare_table.Generate(pe.votes)
 	fmt.Print(hare_table)
@@ -62,19 +61,19 @@ fmt.Println(pe.votes)
 	return true
 }
 
-func processIndependentCandidates() {
-	if len(pe.global.icandidates) == 0 {
+func (pe Pe) processIndependentCandidates() {
+	if len(global.icandidates) == 0 {
 		return
 	}
-	for _, icandidate := range pe.global.icandidates {
+	for _, icandidate := range global.icandidates {
 		mir_id := icandidate.mir_id
-		mirIQuota := int(pe.global.mir_total_votes[mir_id] / pe.mirs[mir_id].mandates)
+		mirIQuota := int(global.mir_total_votes[mir_id] / (*pe.mirs)[mir_id].mandates)
 
 		if icandidate.votes >= mirIQuota {
 			// Winner (single mandate for Indie)
 			pe.results.Add(mir_id, icandidate.candidate_id, INDIVIDUAL_MANDATES)
-			pe.global.total_mandates -= INDIVIDUAL_MANDATES
-			mir, ok := pe.mirs[mir_id]
+			global.total_mandates -= INDIVIDUAL_MANDATES
+			mir, ok := (*pe.mirs)[mir_id]
 			if ok {
 				mir.mandates -= INDIVIDUAL_MANDATES
 			}
@@ -82,21 +81,22 @@ func processIndependentCandidates() {
 	}
 }
 
-func removePartiesBelowMinVotesLimit(min_votes int) {
-	for candidate_id, votes := range pe.global.candidate_votes {
+func (pe *Pe) removePartiesBelowMinVotesLimit(min_votes int) {
+	for candidate_id, votes := range global.candidate_votes {
 		candidate_type := pe.parties.getCandidateType(candidate_id)
 		if candidate_type == CANDIDATE_PARTY && votes < min_votes {
 			pe.parties.Remove(candidate_id)
+			pe.candidates.RemoveParty(candidate_id)
 		}
 	}
 }
 
-func processPartyProportionalMandates(quota float64) {
+func (pe *Pe) processPartyProportionalMandates(quota float64) {
 	mandates := make(map[int]int)
 	remainders := NewRemainders()
 	pre_total_mandates := 0
-	for party_id, _ := range pe.parties {
-		votes, ok := pe.global.candidate_votes[party_id]
+	for party_id, _ := range *(*pe).parties {
+		votes, ok := global.candidate_votes[party_id]
 		if ok {
 			party_mandates := int(float64(votes) / quota)
 			mandates[party_id] = party_mandates
@@ -106,7 +106,7 @@ func processPartyProportionalMandates(quota float64) {
 			fmt.Println(remainder)
 		}
 	}
-	remaining_mandates := pe.global.total_mandates - pre_total_mandates
+	remaining_mandates := global.total_mandates - pre_total_mandates
 	if remaining_mandates > 0 {
 		// Distribute remaining mandates
 		sort.Sort(remainders)
@@ -117,6 +117,6 @@ func processPartyProportionalMandates(quota float64) {
 	fmt.Println(mandates)
 }
 
-func saveData() {
+func (pe Pe) saveData() {
 	// Save Data
 }

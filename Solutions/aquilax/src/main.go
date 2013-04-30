@@ -1,12 +1,13 @@
 package main
 
-var pe Pe
+var global Global
 
 func main() {
 	// TODO: Command line param
 	path := "../../../Tests/1/"
-	pe = NewPe(path)
-	if loadData() && processData() {
-		saveData()
+	global = NewGlobal()
+	pe := NewPe(path)
+	if pe.loadData() && pe.processData() {
+		pe.saveData()
 	}
 }

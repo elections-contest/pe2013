@@ -19,7 +19,7 @@ func TestAdd(t *testing.T) {
 	record[1] = "МИР1"
 	record[2] = "100"
 	mirs.Add(record)
-	rec, ok := mirs[1]
+	rec, ok := (*mirs)[1]
 	if !ok {
 		t.Error("New element is nil")
 	}
