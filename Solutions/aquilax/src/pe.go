@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"sort"
 )
 
@@ -50,13 +49,14 @@ func (pe *Pe) processData() bool {
 
 	pe.processPartyProportionalMandates(hare_quota)
 
-	fmt.Println(pe.votes)
 	// remove votes abroad
 	pe.votes.RemoveAbroad(global.abroad_mir_id)
-	fmt.Println(&pe.votes)
+
+	pe.votes.Print()
+
 	hare_table := NewHareTable()
-	hare_table.Generate(pe.votes)
-	fmt.Print(hare_table)
+	hare_table.Generate(pe.votes, pe.mirs)
+	hare_table.Print()
 	// Process Data
 	return true
 }
@@ -101,7 +101,7 @@ func (pe *Pe) processPartyProportionalMandates(quota float64) {
 			party_mandates := int(float64(votes) / quota)
 			mandates[party_id] = party_mandates
 			pre_total_mandates += party_mandates
-			remainder := int(((float64(votes) / quota) - float64(party_mandates)) * math.Pow(10, float64(REMAINDER_PRECISION)))
+			remainder := int(((float64(votes) / quota) - float64(party_mandates)) * global.remainder_multiplier)
 			remainders.Add(party_id, remainder)
 			fmt.Println(remainder)
 		}

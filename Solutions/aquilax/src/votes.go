@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -66,10 +67,19 @@ func (v *Votes) RemoveVotesForCandidate(mir_id, candidate_id int) {
 			print("\n")
 			global.total_votes -= votes
 		}
-		delete(*v, mir_id)
 	}
 }
 
 func (v *Votes) RemoveAbroad(abroad_mir_id int) {
 	delete(*v, abroad_mir_id)
+}
+
+func (v *Votes) Print() {
+	for mir_id, mir_votes := range *v {
+		fmt.Printf("%d\t", mir_id)
+		for candidate_id, votes := range *mir_votes {
+			fmt.Printf("%d= %d,\t", candidate_id, votes)
+		}
+		fmt.Print("\n")
+	}
 }

@@ -32,3 +32,11 @@ func (m *Mirs) Load(path string) {
 	file_name := path + MIR_FILENAME
 	loadFile(m, file_name)
 }
+
+func (m *Mirs) GetMandates(mir_id int) int {
+	mir, ok := (*m)[mir_id]
+	if !ok {
+		panic("Undefined MIR")
+	}
+	return mir.mandates
+}
