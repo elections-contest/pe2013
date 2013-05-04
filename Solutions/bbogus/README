@@ -1,0 +1,9 @@
+Usage: btsekov_pe2013.py <directory> <minimum % votes>
+where
+    <directory> points to a folder that contains data for Elections Contest.
+    <minimum % votes> define the minimum % votes that every party must receive.
+
+When command-line arguments are omitted, default values are taken - reading all input data from current folder and using 4.0% as minimum percentage votes for all parties.
+
+
+In file btsekov_pe2013.py on line 12 change to "DEBUG = True" to enable verbose messages during exection of the program.
