@@ -172,8 +172,8 @@ class Pe {
 			return $result;
 		}
 		// No "next number" if total equals array length
-		if ($total == count($vals)) {
-			$total--;
+		if ($total >= count($vals)) {
+			$total = count($vals) - 1;
 		}
 		// Check remaining numbers for duplicates
 		for($i = 1; $i < $total+1; $i++) {
