@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 
 error_reporting(E_ALL);
@@ -42,6 +43,10 @@ class Pe {
 	}
 
 	function loader($filename, $processor) {
+		if (!file_exists($filename)) {
+			printf("Cannot open file: %s".PHP_EOL, $filename);
+			exit(2);
+		}
 		if (($handle = fopen($filename, "r")) !== FALSE) {
 	    	while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
 				call_user_func('self::'.$processor, $data);
@@ -299,8 +304,12 @@ class Pe {
 	}
 }
 
-
-$path = '../../../Tests/1/';
-$pe = new Pe();
-$pe->start($path);
+if (isset($argv[1]) && file_exists($argv[1])) {
+	$path = $argv[1]; //'../../../Tests/1/';
+	$pe = new Pe();
+	$pe->start($path);
+} else {
+	print("Usage: php pe.php files_path".PHP_EOL);
+	exit(1);
+}
 ?>
