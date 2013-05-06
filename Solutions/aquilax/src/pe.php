@@ -26,11 +26,12 @@ class Pe {
 	private $party_votes = array();
 	private $mir_total_votes = array();
 	private $sec_3_2_mandates = array();
+	private $parties_with_extra_mandates = array();
 
 	function start($path) {
 		$this->loadData($path);
 		$this->processData();
-		//$this->saveData();
+		$this->saveData();
 	}
 
 	function loadData($path) {
@@ -116,6 +117,11 @@ class Pe {
 		unset($this->parties[$this->abroad_mir_id]);
 		
 		$this->generateHareTable();	
+
+		while (!$this->checkSolution()) {
+			$this->rearrangeMandates();
+		}
+		$this->populateResults();
 	}
 	
 	function processIndependentCandidates() {
@@ -167,6 +173,7 @@ class Pe {
 		$remaining_mandates = $this->total_mandates - $pre_total_mandates;
 		if ($remaining_mandates > 0) {
 			// Distribute remaining mandates
+			// TODO: Consider 16(6)
 			arsort($remainders, SORT_NUMERIC);
 			$remainders = array_slice($remainders, 0, $remaining_mandates, TRUE);
 			foreach ($remainders as $party_id => $remainder) {
@@ -197,7 +204,9 @@ class Pe {
 					$this->hare_table[$mir_id] = array();
 				}
 				$mandates = $votes / $hare_quota;
-				$this->sec_3_2_mandates[$mir_id][$party_id] = (int)$mandates;
+				$this->sec_3_2_mandates[$mir_id][$party_id] = array();
+				$this->sec_3_2_mandates[$mir_id][$party_id][0] = (int)$mandates; // BASE mandates
+				$this->sec_3_2_mandates[$mir_id][$party_id][1] = 0; // Extra mandates
 				$this->sec_3_2_totals[$mir_id] += (int)$mandates;
 
 				$this->hare_table[$mir_id][$party_id] = $mandates - (int)$mandates; 
@@ -205,15 +214,88 @@ class Pe {
 		}
 		foreach ($this->hare_table as $mir_id => $parties) {
 			$remaining = $this->mirs[$mir_id] - $this->sec_3_2_totals[$mir_id];
-			print $remaining.PHP_EOL;
+			// TODO: Consider 21(6)
 			arsort($parties, SORT_NUMERIC);
 			$parties = array_slice($parties, 0, $remaining, TRUE);
 			foreach ($parties as $party_id => $remainder) {
-				$this->sec_3_2_mandates[$mir_id][$party_id] += 1;
+				$this->sec_3_2_mandates[$mir_id][$party_id][1] = 1;
 			}
 		}
-		print_r($this->sec_3_2_mandates);
-		print_r($this->prop_mandates);
+	}
+
+	function checkSolution() {
+		$agg = array();
+		$result = TRUE;
+		$this->parties_with_extra_mandates = array();
+		foreach ($this->sec_3_2_mandates as $mir_id => $parties) {
+			foreach ($parties as $party_id => $mandates) {
+				if (!isset($agg[$party_id])) {
+					$agg[$party_id] = 0;
+				}
+				$agg[$party_id] += $mandates[0] + $mandates[1];
+			}
+		}
+		foreach($agg as $party_id => $mandates) {
+			if ($this->prop_mandates[$party_id] != $mandates) {
+				if ($this->prop_mandates[$party_id] < $mandates) {
+					$this->parties_with_extra_mandates[] = $party_id;
+				}
+				$result = FALSE;
+			}
+		}
+		return $result;
+	}
+
+	function rearrangeMandates() {
+		$min_remainder = 1;
+		$min_party_id = 0;
+		$min_mir_id = 0;
+		foreach ($this->hare_table as $mir_id => $parties) {
+			foreach ($this->parties_with_extra_mandates as $party_id) {
+				$remainder = $parties[$party_id]; 
+				if ($remainder > 0  // not used
+					&& $remainder < $min_remainder // min
+					&& $this->sec_3_2_mandates[$mir_id][$party_id][1] > 0 // has mandate
+				) {
+					$min_remainder = $parties[$party_id]; 
+					$min_party_id = $party_id;
+					$min_mir_id = $mir_id;
+				}
+			}
+		}
+		$this->sec_3_2_mandates[$min_mir_id][$min_party_id][1] -= 1; // decrease extra mandate
+		$this->hare_table[$min_mir_id][$min_party_id] = -1; // mark as passed
+		$party_id = $this->getMaxRemainderForMir($min_mir_id);
+		$this->sec_3_2_mandates[$min_mir_id][$party_id][1] += 1; // increase extra mandate
+	}
+
+	function getMaxRemainderForMir($mir_id) {
+		$max_remainder = 0;
+		$max_party_id = 0;
+		foreach($this->hare_table[$mir_id] as $party_id => $remainder) {
+			if ($remainder > $max_remainder && $this->sec_3_2_mandates[$mir_id][$party_id][1] == 0) {
+				$max_remainder = $remainder;
+				$max_party_id = $party_id;
+			}
+		}
+		return $max_party_id;
+	}
+
+	function populateResults() {
+		foreach ($this->sec_3_2_mandates as $mir_id => $parties) {
+			foreach ($parties as $party_id => $mandates) {
+				$total = $mandates[0] + $mandates[1];
+				if ($total) {
+					$this->results[] = array($mir_id, $party_id, $mandates[0] + $mandates[1]);
+				}
+			}
+		}
+	}
+
+	function saveData() {
+		foreach ($this->results as $result) {
+			printf("%d;%d;%d\n", $result[0], $result[1], $result[2]);
+		}
 	}
 }
 
