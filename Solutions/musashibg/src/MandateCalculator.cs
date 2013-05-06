@@ -12,6 +12,7 @@ namespace MandateCalculator
 		private List<VoteBatch> _voteBatches;
 		private List<Lot> _lots;
 		private List<Result> _results;
+		private Dictionary<int, decimal> _nationalRemainders;
 
 		public Dictionary<int, Region> Regions
 		{
@@ -105,7 +106,7 @@ namespace MandateCalculator
 			_results = new List<Result>();
 			CalculateIndependentCandidateMandates();
 			ExcludeLowRankingParties();
-			CalculateTotalPartyMandates();
+			CalculateNationalMandates();
 			CalculateInitialRegionalMandates();
 			CalculateAdjustedRegionalMandates();
 			FillResults();
@@ -155,7 +156,7 @@ namespace MandateCalculator
 
 				foreach (Candidate candidate in independentCandidates)
 				{
-					if (region.GetVoteCount(candidate.PartyId) > regionQuota)
+					if (region.GetVoteCount(candidate.PartyId) >= regionQuota)
 					{
 						var result = new Result
 						{
@@ -177,20 +178,20 @@ namespace MandateCalculator
 		private void ExcludeLowRankingParties()
 		{
 			ConsoleHelper.WriteSectionCaption("Определяне на партии и коалиции, които ще бъдат допуснати до разпределянето на мандати (по чл. 14)");
-			int totalVotes = VoteBatches.Sum(vb => vb.VoteCount);
-			Console.WriteLine("Общ брой събрани гласове:     {0}", totalVotes);
-			decimal votesThreshold = totalVotes * 0.04m;
-			Console.WriteLine("Праг от 4% от общите гласове: {0:F}", votesThreshold);
+			int totalVoteCount = VoteBatches.Sum(vb => vb.VoteCount);
+			Console.WriteLine("Общ брой събрани гласове:     {0}", totalVoteCount);
+			decimal voteThreshold = totalVoteCount * 0.04m;
+			Console.WriteLine("Праг от 4% от общите гласове: {0:F}", voteThreshold);
 			Console.WriteLine();
 
 			ConsoleHelper.WriteSectionCaption("Партии и коалиции, които са събрали по-малко от 4% от общите гласове");
 			foreach (Party party in Parties.Values.ToList())
 			{
-				int partyVotes = party.GetTotalVotes();
-				if (partyVotes < votesThreshold)
+				int partyVoteCount = party.GetTotalVoteCount();
+				if (partyVoteCount < voteThreshold)
 				{
 					ConsoleHelper.WriteObject(party,
-						string.Format("Брой събрани гласове:     {0} ({1:F}%)", partyVotes, (decimal)partyVotes * 100 / totalVotes));
+						string.Format("Брой събрани гласове:     {0} ({1:F}%)", partyVoteCount, (decimal)partyVoteCount * 100 / totalVoteCount));
 
 					Parties.Remove(party.PartyId);
 				}
@@ -212,48 +213,54 @@ namespace MandateCalculator
 			RemoveVoteBatches(vb => !Parties.ContainsKey(vb.PartyId));
 		}
 
-		private void CalculateTotalPartyMandates()
+		private void CalculateNationalMandates()
 		{
 			ConsoleHelper.WriteSectionCaption("Разпределение на мандатите на партии и коалиции на национално ниво (по чл. 16)");
-			int totalVotes = VoteBatches.Sum(vb => vb.VoteCount);
-			Console.WriteLine("Общ брой събрани гласове:         {0}", totalVotes);
-			int totalMandates = Regions.Values.Sum(m => m.MandateCount);
-			Console.WriteLine("Общ брой мандати за разпределяне: {0}", totalMandates);
-			decimal hareQuota = (decimal)totalVotes / totalMandates;
+			int totalVoteCount = VoteBatches.Sum(vb => vb.VoteCount);
+			Console.WriteLine("Общ брой събрани гласове:         {0}", totalVoteCount);
+			int totalMandateCount = Regions.Values.Sum(m => m.MandateCount);
+			Console.WriteLine("Общ брой мандати за разпределяне: {0}", totalMandateCount);
+			decimal hareQuota = (decimal)totalVoteCount / totalMandateCount;
 			Console.WriteLine("Квота на Хеър:                    {0:F6}", hareQuota);
 			Console.WriteLine();
 
-			#region Разпределяне на мандати по чл. 16, ал. 3
+			_nationalRemainders = new Dictionary<int, decimal>();
 
+			// Разпределяне на мандати по чл. 16, ал. 3
+			AssignBaseNationalMandates(hareQuota);
+
+			// Разпределяне на допълнителни мандати по чл. 16, ал. 5 и 6
+			AssignAdditionalNationalMandates(totalMandateCount);
+		}
+
+		private void AssignBaseNationalMandates(decimal hareQuota)
+		{
 			ConsoleHelper.WriteSectionCaption("Партии и коалиции, които получават мандати по чл. 16, ал. 3");
-			int assignedMandates = 0;
-			var remainders = new Dictionary<int, decimal>();
 			foreach (Party party in Parties.Values)
 			{
-				int partyVotes = party.GetTotalVotes();
-				decimal partyQuotient = partyVotes / hareQuota;
-				party.TargetMandateCount = (int)partyQuotient;
+				int partyVoteCount = party.GetTotalVoteCount();
+				decimal partyQuotient = partyVoteCount / hareQuota;
+				party.NationalMandateCount = (int)partyQuotient;
 
-				assignedMandates += party.TargetMandateCount;
-				remainders.Add(party.PartyId, partyQuotient - party.TargetMandateCount);
+				_nationalRemainders.Add(party.PartyId, partyQuotient - party.NationalMandateCount);
 
-				if (party.TargetMandateCount > 0)
+				if (party.NationalMandateCount > 0)
 				{
 					ConsoleHelper.WriteObject(party,
-						string.Format("Брой получени мандати:    {0}", party.TargetMandateCount));
+						string.Format("Брой получени мандати:    {0}", party.NationalMandateCount));
 				}
 			}
+		}
 
-			#endregion
-
-			#region Разпределяне на допълнителни мандати по чл. 16, ал. 5 и 6
-
+		private void AssignAdditionalNationalMandates(int totalMandateCount)
+		{
 			ConsoleHelper.WriteSectionCaption("Партии и коалиции, които получават допълнителен мандат по чл. 16, ал. 5 и 6");
-			while (assignedMandates < totalMandates)
+			int remainingMandateCount = totalMandateCount - GetAssignedNationalMandateCount();
+			while (remainingMandateCount > 0)
 			{
 				decimal maxRemainder = -1.0m;
 				var partyIds = new List<int>();
-				foreach (KeyValuePair<int, decimal> remainder in remainders)
+				foreach (KeyValuePair<int, decimal> remainder in _nationalRemainders)
 				{
 					if (remainder.Value > maxRemainder)
 					{
@@ -265,16 +272,15 @@ namespace MandateCalculator
 						partyIds.Add(remainder.Key);
 				}
 
-				int assignableMandates = totalMandates - assignedMandates;
-				if (partyIds.Count > assignableMandates)
+				if (partyIds.Count > remainingMandateCount)
 				{
 					Console.WriteLine(
 						"Достигнат жребий при разпределяне на мандатите на партии и коалиции по чл. 16, ал. 6. Трябва да бъдат изтеглени {0} партии.",
-						assignableMandates);
+						remainingMandateCount);
 					Console.WriteLine();
 
 					var chosenPartyIds = new List<int>();
-					for (int i = 0; i < assignableMandates; i++)
+					for (int i = 0; i < remainingMandateCount; i++)
 					{
 						if (Lots.Count == 0)
 							throw new AmbiguityException("Достигнат жребий по чл. 16, ал. 6, но липсва резултат от жребия в Lots.txt.");
@@ -293,17 +299,20 @@ namespace MandateCalculator
 				foreach (int partyId in partyIds)
 				{
 					Party party = Parties[partyId];
-					party.TargetMandateCount++;
-					remainders.Remove(partyId);
+					party.NationalMandateCount++;
+					_nationalRemainders.Remove(partyId);
 
 					ConsoleHelper.WriteObject(party,
-						string.Format("Общ брой получени мандати: {0}", party.TargetMandateCount));
+						string.Format("Общ брой получени мандати: {0}", party.NationalMandateCount));
 				}
 
-				assignedMandates += partyIds.Count;
+				remainingMandateCount = totalMandateCount - GetAssignedNationalMandateCount();
 			}
+		}
 
-			#endregion
+		private int GetAssignedNationalMandateCount()
+		{
+			return Parties.Values.Sum(p => p.NationalMandateCount);
 		}
 
 		private void CalculateInitialRegionalMandates()
@@ -315,86 +324,90 @@ namespace MandateCalculator
 					continue;
 
 				ConsoleHelper.WriteSectionCaption(string.Format("Разпределение на мандатите на партии и коалиции в МИР {0} (по чл. 21)", region.RegionId));
-				int totalVotes = region.GetTotalVotes();
-				Console.WriteLine("Брой събрани гласове в МИР:         {0}", totalVotes);
+				int totalVoteCount = region.GetTotalVoteCount();
+				Console.WriteLine("Брой събрани гласове в МИР:         {0}", totalVoteCount);
 				Console.WriteLine("Брой мандати за разпределяне в МИР: {0}", region.MandateCount);
-				decimal hareQuota = (decimal)totalVotes / region.MandateCount;
+				decimal hareQuota = (decimal)totalVoteCount / region.MandateCount;
 				Console.WriteLine("Квота на Хеър:                      {0:F6}", hareQuota);
 				Console.WriteLine();
 
-				#region Разпределяне на мандати по чл. 21, ал. 3
+				// Разпределяне на мандати по чл. 21, ал. 3
+				AssignBaseRegionalMandates(region, hareQuota);
 
-				ConsoleHelper.WriteSectionCaption("Партии и коалиции, които получават мандати по чл. 21, ал. 3");
-				foreach (Party party in Parties.Values)
+				// Разпределяне на допълнителни мандати по чл. 21, ал. 5 и 6
+				AssignAdditionalRegionalMandates(region);
+			}
+		}
+
+		private void AssignBaseRegionalMandates(Region region, decimal hareQuota)
+		{
+			ConsoleHelper.WriteSectionCaption("Партии и коалиции, които получават мандати по чл. 21, ал. 3");
+			foreach (Party party in Parties.Values)
+			{
+				int partyVoteCount = region.GetVoteCount(party.PartyId);
+				decimal partyQuotient = partyVoteCount / hareQuota;
+				int baseMandateCount = (int)partyQuotient;
+
+				var assignment = new MandateAssignment
 				{
-					int partyVotes = region.GetVoteCount(party.PartyId);
-					decimal partyQuotient = partyVotes / hareQuota;
-					int mainMandateCount = (int)partyQuotient;
+					RegionId = region.RegionId,
+					PartyId = party.PartyId,
+					BaseMandateCount = baseMandateCount,
+					Remainder = partyQuotient - baseMandateCount,
+				};
 
-					var assignment = new MandateAssignment
+				party.MandateAssignments.Add(assignment);
+				region.MandateAssignments.Add(party.PartyId, assignment);
+
+				ConsoleHelper.WriteObject(assignment);
+			}
+		}
+
+		private void AssignAdditionalRegionalMandates(Region region)
+		{
+			ConsoleHelper.WriteSectionCaption("Партии и коалиции, които получават допълнителен мандат по чл. 21, ал. 5 и 6");
+			int assignedMandateCount = region.GetAssignedMandateCount();
+			while (assignedMandateCount < region.MandateCount)
+			{
+				decimal maxRemainder = -1.0m;
+				var partyIds = new List<int>();
+				foreach (MandateAssignment assignment in region.MandateAssignments.Values)
+				{
+					// Партии, които вече са получили допълнителен мандат на предишна стъпка, не участват в разпределянето
+					if (assignment.AdditionalMandate)
+						continue;
+
+					if (assignment.Remainder > maxRemainder)
 					{
-						RegionId = region.RegionId,
-						PartyId = party.PartyId,
-						MainMandateCount = mainMandateCount,
-						Remainder = partyQuotient - mainMandateCount,
-					};
+						partyIds.Clear();
+						partyIds.Add(assignment.PartyId);
+						maxRemainder = assignment.Remainder;
+					}
+					else if (assignment.Remainder == maxRemainder)
+						partyIds.Add(assignment.PartyId);
+				}
 
-					party.MandateAssignments.Add(assignment);
-					region.MandateAssignments.Add(party.PartyId, assignment);
+				int remainingMandateCount = region.MandateCount - assignedMandateCount;
+				if (partyIds.Count > remainingMandateCount)
+				{
+					Console.WriteLine(
+						"Достигнат жребий при разпределяне на мандатите на партии и коалиции по чл. 21, ал. 6. Мандатите ще бъдат получени от първите {0} партии с най-малки номера.",
+						remainingMandateCount);
+					Console.WriteLine();
+
+					partyIds.Sort();
+					partyIds.RemoveRange(remainingMandateCount, partyIds.Count - remainingMandateCount);
+				}
+
+				foreach (int partyId in partyIds)
+				{
+					MandateAssignment assignment = region.MandateAssignments[partyId];
+					assignment.AdditionalMandate = true;
 
 					ConsoleHelper.WriteObject(assignment);
 				}
 
-				#endregion
-
-				#region Разпределяне на допълнителни мандати по чл. 21, ал. 5 и 6
-
-				ConsoleHelper.WriteSectionCaption("Партии и коалиции, които получават допълнителен мандат по чл. 21, ал. 5 и 6");
-				int assignedMandates = region.GetAssignedMandateCount();
-				while (assignedMandates < region.MandateCount)
-				{
-					decimal maxRemainder = -1.0m;
-					var partyIds = new List<int>();
-					foreach (MandateAssignment assignment in region.MandateAssignments.Values)
-					{
-						// Партии, които вече са получили допълнителен мандат на предишна стъпка, не участват в разпределянето
-						if (assignment.AdditionalMandate)
-							continue;
-
-						if (assignment.Remainder > maxRemainder)
-						{
-							partyIds.Clear();
-							partyIds.Add(assignment.PartyId);
-							maxRemainder = assignment.Remainder;
-						}
-						else if (assignment.Remainder == maxRemainder)
-							partyIds.Add(assignment.PartyId);
-					}
-
-					int assignableMandates = region.MandateCount - assignedMandates;
-					if (partyIds.Count > assignableMandates)
-					{
-						Console.WriteLine(
-							"Достигнат жребий при разпределяне на мандатите на партии и коалиции по чл. 21, ал. 6. Мандатите ще бъдат получени от първите {0} партии с най-малки номера.",
-							assignableMandates);
-						Console.WriteLine();
-
-						partyIds.Sort();
-						partyIds.RemoveRange(assignableMandates, partyIds.Count - assignableMandates);
-					}
-
-					foreach (int partyId in partyIds)
-					{
-						MandateAssignment assignment = region.MandateAssignments[partyId];
-						assignment.AdditionalMandate = true;
-
-						ConsoleHelper.WriteObject(assignment);
-					}
-
-					assignedMandates = region.GetAssignedMandateCount();
-				}
-
-				#endregion
+				assignedMandateCount = region.GetAssignedMandateCount();
 			}
 		}
 
@@ -415,40 +428,10 @@ namespace MandateCalculator
 
 				do
 				{
-					decimal minRemainder = 1.0m;
-					minAssignment = null;
-					foreach (int partyId in overassignedPartyIds)
-					{
-						Party party = Parties[partyId];
-						foreach (MandateAssignment assignment in party.MandateAssignments)
-						{
-							// Разглеждат се само разпределения на допълнителни мандати
-							if (!assignment.AdditionalMandate)
-								continue;
-
-							// Пренебрегват се партии, чиито разпределени допълнителни мандати са били вече отнети
-							if (assignment.AlreadyAdjusted)
-								continue;
-
-							// Пренебрегват се МИР, които са изключени по чл. 26
-							if (ignoredRegionIds.Contains(assignment.RegionId))
-								continue;
-
-							if (assignment.Remainder < minRemainder)
-							{
-								minRemainder = assignment.Remainder;
-								minAssignment = assignment;
-							}
-							else if (assignment.Remainder == minRemainder
-										&& (minAssignment == null || assignment.PartyId < minAssignment.PartyId))
-							{
-								minAssignment = assignment;
-							}
-						}
-					}
+					minAssignment = FindMinAdditionalMandateAssignment(overassignedPartyIds, ignoredRegionIds);
 
 					Console.WriteLine("Намерен разпределен допълнителен мандат за най-малък остатък:");
-					Console.WriteLine("Номер на МИР:         {0}", minAssignment.RegionId);
+					Console.WriteLine("Номер на МИР:             {0}", minAssignment.RegionId);
 					ConsoleHelper.WriteObject(minAssignment);
 
 					region = Regions[minAssignment.RegionId];
@@ -468,43 +451,71 @@ namespace MandateCalculator
 
 				#endregion
 
-				#region Намиране на следващия по големина остатък, за който може да бъде разпределен допълнителен мандат (чл. 27)
+				// Намиране на следващия по големина остатък, за който може да бъде разпределен допълнителен мандат (чл. 27)
+				MandateAssignment eligibleAssignment = region.FindEligibleMandateAssignment();
 
-				decimal maxRemainder = -1.0m;
-				var eligiblePartyIds = new List<int>();
-				foreach (MandateAssignment assignment in region.MandateAssignments.Values)
+				minAssignment.AdditionalMandate = false;
+				minAssignment.AlreadyAdjusted = true;
+				eligibleAssignment.AdditionalMandate = true;
+				Console.WriteLine("Намерен следващ най-голям остатък, на който бива разпределен допълнителен мандат в МИР:");
+				ConsoleHelper.WriteObject(eligibleAssignment);
+			}
+		}
+
+		private bool FindAssignmentsToAdjust(out HashSet<int> underassignedPartyIds, out HashSet<int> overassignedPartyIds)
+		{
+			underassignedPartyIds = new HashSet<int>();
+			overassignedPartyIds = new HashSet<int>();
+
+			foreach (Party party in Parties.Values)
+			{
+				int assignedMandateCount = party.GetAssignedMandateCount();
+				if (assignedMandateCount < party.NationalMandateCount)
+					underassignedPartyIds.Add(party.PartyId);
+				else if (assignedMandateCount > party.NationalMandateCount)
+					overassignedPartyIds.Add(party.PartyId);
+			}
+
+			// Ако няма партии, получили по-малко от очаквания брой мандати,
+			// то няма да има и такива, получили повече от очаквания брой
+			return underassignedPartyIds.Count > 0;
+		}
+
+		private MandateAssignment FindMinAdditionalMandateAssignment(HashSet<int> partyIds, HashSet<int> ignoredRegionIds)
+		{
+			decimal minRemainder = 1.0m;
+			MandateAssignment minAssignment = null;
+			foreach (int partyId in partyIds)
+			{
+				Party party = Parties[partyId];
+				foreach (MandateAssignment assignment in party.MandateAssignments)
 				{
-					// Разглеждат се само партии, на които не е разпределен допълнителен мандат в този МИР
-					if (assignment.AdditionalMandate)
+					// Разглеждат се само разпределения на допълнителни мандати
+					if (!assignment.AdditionalMandate)
 						continue;
 
 					// Пренебрегват се партии, чиито разпределени допълнителни мандати са били вече отнети
 					if (assignment.AlreadyAdjusted)
 						continue;
 
-					if (assignment.Remainder > maxRemainder)
+					// Пренебрегват се МИР, които са изключени по чл. 26
+					if (ignoredRegionIds.Contains(assignment.RegionId))
+						continue;
+
+					if (assignment.Remainder < minRemainder)
 					{
-						maxRemainder = assignment.Remainder;
-						eligiblePartyIds.Clear();
-						eligiblePartyIds.Add(assignment.PartyId);
+						minRemainder = assignment.Remainder;
+						minAssignment = assignment;
 					}
-					else if (assignment.Remainder == maxRemainder)
-						eligiblePartyIds.Add(assignment.PartyId);
+					else if (assignment.Remainder == minRemainder
+								&& (minAssignment == null || assignment.PartyId < minAssignment.PartyId))
+					{
+						minAssignment = assignment;
+					}
 				}
-
-				if (eligiblePartyIds.Count > 1)
-					throw new AmbiguityException("При преразпределяне на допълнителен мандат по чл. 27 са достигнати повече от един равни максимални неудовлетворени с допълнителен мандат остатъци.");
-
-
-				#endregion
-
-				minAssignment.AdditionalMandate = false;
-				minAssignment.AlreadyAdjusted = true;
-				MandateAssignment eligibleAssignment = region.MandateAssignments[eligiblePartyIds[0]];
-				eligibleAssignment.AdditionalMandate = true;
-				Console.WriteLine("Намерен следващ най-голям остатък, на който бива разпределен допълнителен мандат в МИР:");
-				ConsoleHelper.WriteObject(eligibleAssignment);
 			}
+
+			return minAssignment;
 		}
 
 		private void FillResults()
@@ -536,25 +547,6 @@ namespace MandateCalculator
 		private void RemoveVoteBatches(Func<VoteBatch, bool> predicate)
 		{
 			_voteBatches = VoteBatches.Where(vb => !predicate(vb)).ToList();
-		}
-
-		private bool FindAssignmentsToAdjust(out HashSet<int> underassignedPartyIds, out HashSet<int> overassignedPartyIds)
-		{
-			underassignedPartyIds = new HashSet<int>();
-			overassignedPartyIds = new HashSet<int>();
-
-			foreach (Party party in Parties.Values)
-			{
-				int assignedMandateCount = party.GetAssignedMandateCount();
-				if (assignedMandateCount < party.TargetMandateCount)
-					underassignedPartyIds.Add(party.PartyId);
-				else if (assignedMandateCount > party.TargetMandateCount)
-					overassignedPartyIds.Add(party.PartyId);
-			}
-
-			// Ако няма партии, получили по-малко от очаквания брой мандати,
-			// то няма да има и такива, получили повече от очаквания брой
-			return underassignedPartyIds.Count > 0;
 		}
 	}
 }

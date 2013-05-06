@@ -36,15 +36,15 @@ namespace MandateCalculator
 			return builder.ToString();
 		}
 
-		public int GetTotalVotes()
+		public int GetTotalVoteCount()
 		{
 			return VoteBatches.Values.Sum(vb => vb.VoteCount);
 		}
 
 		public decimal GetRegionQuota()
 		{
-			int totalVotes = GetTotalVotes();
-			return (decimal)totalVotes / MandateCount;
+			int totalVoteCount = GetTotalVoteCount();
+			return (decimal)totalVoteCount / MandateCount;
 		}
 
 		public int GetVoteCount(int partyId)
@@ -60,7 +60,7 @@ namespace MandateCalculator
 			int mandateCount = 0;
 			foreach (MandateAssignment assignment in MandateAssignments.Values)
 			{
-				mandateCount += assignment.MainMandateCount;
+				mandateCount += assignment.BaseMandateCount;
 				if (assignment.AdditionalMandate)
 					mandateCount++;
 			}
@@ -71,6 +71,36 @@ namespace MandateCalculator
 		{
 			return MandateAssignments
 				.Any(kv => partyIds.Contains(kv.Key) && !kv.Value.AdditionalMandate);
+		}
+
+		public MandateAssignment FindEligibleMandateAssignment()
+		{
+			decimal maxRemainder = -1.0m;
+			var eligiblePartyIds = new List<int>();
+			foreach (MandateAssignment assignment in MandateAssignments.Values)
+			{
+				// Разглеждат се само партии, на които не е разпределен допълнителен мандат в този МИР
+				if (assignment.AdditionalMandate)
+					continue;
+
+				// Пренебрегват се партии, чиито разпределени допълнителни мандати са били вече отнети
+				if (assignment.AlreadyAdjusted)
+					continue;
+
+				if (assignment.Remainder > maxRemainder)
+				{
+					maxRemainder = assignment.Remainder;
+					eligiblePartyIds.Clear();
+					eligiblePartyIds.Add(assignment.PartyId);
+				}
+				else if (assignment.Remainder == maxRemainder)
+					eligiblePartyIds.Add(assignment.PartyId);
+			}
+
+			if (eligiblePartyIds.Count > 1)
+				throw new AmbiguityException("При преразпределяне на допълнителен мандат по чл. 27 са достигнати повече от един равни максимални неудовлетворени с допълнителен мандат остатъци.");
+
+			return MandateAssignments[eligiblePartyIds[0]];
 		}
 	}
 }

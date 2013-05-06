@@ -21,7 +21,7 @@ namespace MandateCalculator
 
 		public Dictionary<int, VoteBatch> VoteBatches { get; private set; }
 
-		public int TargetMandateCount { get; set; }
+		public int NationalMandateCount { get; set; }
 
 		public List<MandateAssignment> MandateAssignments { get; private set; }
 
@@ -34,7 +34,7 @@ namespace MandateCalculator
 			return builder.ToString();
 		}
 
-		public int GetTotalVotes()
+		public int GetTotalVoteCount()
 		{
 			return VoteBatches.Values.Sum(vb => vb.VoteCount);
 		}
@@ -44,7 +44,7 @@ namespace MandateCalculator
 			int mandateCount = 0;
 			foreach (MandateAssignment assignment in MandateAssignments)
 			{
-				mandateCount += assignment.MainMandateCount;
+				mandateCount += assignment.BaseMandateCount;
 				if (assignment.AdditionalMandate)
 					mandateCount++;
 			}

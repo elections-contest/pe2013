@@ -1,0 +1,15 @@
+MandateCalculator is an implementation of the Algorithm for
+calculation of the results of Parliament elections in Bulgaria, as
+described in https://www.cik.bg/f/105. It is a console application
+based on the .NET Framework 3.5 and its source code is written in
+C#. In addition to generating its main output file Result.txt, the
+application also prints intermediary information (in Bulgarian) to
+the standard output device.
+
+MandateCalculator е имплементация на описаната в
+https://www.cik.bg/f/105 Методика на ЦИК за определяне резултатите
+от гласуването за народни представители. Това е конзолно приложение,
+базирано на .NET Framework 3.5, а изходният му код е написан на C#.
+В допълнение към генерирането на основния изходен файл Result.txt,
+приложението също отпечатва междинна информация (на български) на
+стандартния изход.
