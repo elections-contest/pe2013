@@ -12,7 +12,6 @@ class Pe {
 
 	const VOTE_BAREER = 0.04;
 
-	private $remainder_multiplier = 10000;
 	private $abroad_mir_id = 0;
 	private $total_mandates = 0;
 	private $total_votes = 0;
@@ -163,25 +162,51 @@ class Pe {
 			}
 		}
 	}
+	
+	function getElement(&$arr, $index, $total) {
+		$keys = array_keys($arr);
+		$vals = array_values($arr);
+		$result = $keys[$index];
+		if (!isset($vals[$index+1])) {
+			// No next element so no duplicates
+			return $result;
+		}
+		// No "next number" if total equals array length
+		if ($total == count($vals)) {
+			$total--;
+		}
+		// Check remaining numbers for duplicates
+		for($i = 1; $i < $total+1; $i++) {
+			if ($vals[$index] != $vals[$index+$i]) {
+				// difference, return the resulting key
+				return $result;
+			}
+		}
+		return -1;
+	}
 
 	function processPartyProportionalMandates($quota) {
 		$this->prop_mandates = array();
 		$remainders = array();
 		$pre_total_mandates = 0;
 		foreach ($this->party_votes as $party_id => $votes) {
-			$party_mandates = (int)($votes / $quota);
-			$this->prop_mandates[$party_id] = $party_mandates;
-			$pre_total_mandates += $party_mandates;
-			$remainder = (int)((($votes / $quota) - $party_mandates) * $this->remainder_multiplier);
+			$party_mandates = $votes / $quota;
+			$this->prop_mandates[$party_id] = (int)$party_mandates;
+			$pre_total_mandates += (int)$party_mandates;
+			$remainder = $party_mandates - (int)$party_mandates;
 			$remainders[$party_id] =  $remainder;
 		}
 		$remaining_mandates = $this->total_mandates - $pre_total_mandates;
 		if ($remaining_mandates > 0) {
 			// Distribute remaining mandates
-			// TODO: Consider 16(6)
 			arsort($remainders, SORT_NUMERIC);
-			$remainders = array_slice($remainders, 0, $remaining_mandates, TRUE);
-			foreach ($remainders as $party_id => $remainder) {
+			for ($i = 0; $i < $remaining_mandates; $i++) {
+				$party_id = $this->getElement($remainders, $i, $remaining_mandates);
+				if ($party_id == -1) {
+					echo '0'.PHP_EOL;
+					echo 'Достигнат жребий по Чл. 16.(6)'.PHP_EOL;
+					exit(3);
+				}
 				$this->prop_mandates[$party_id]++;
 			}
 		}
@@ -219,10 +244,15 @@ class Pe {
 		}
 		foreach ($this->hare_table as $mir_id => $parties) {
 			$remaining = $this->mirs[$mir_id] - $this->sec_3_2_totals[$mir_id];
-			// TODO: Consider 21(6)
 			arsort($parties, SORT_NUMERIC);
-			$parties = array_slice($parties, 0, $remaining, TRUE);
-			foreach ($parties as $party_id => $remainder) {
+			for ($i = 0; $i < $remaining; $i++) {
+				$party_id = $this->getElement($parties, $i, $remaining);
+				if ($party_id == -1) {
+					echo '0'.PHP_EOL;
+					echo 'Достигнат жребий по Чл. 21.(6)'.PHP_EOL;
+					exit(4);
+				}
+
 				$this->sec_3_2_mandates[$mir_id][$party_id][1] = 1;
 			}
 		}
