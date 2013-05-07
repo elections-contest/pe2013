@@ -79,25 +79,31 @@ class Pe {
 	function candidateProcessor($data) {
 		$mir_id = (int)$data[0];
 		$candidate_id = (int)$data[1];
-		$bucket = &$this->getBucket($candidate_id);
-		if (!isset($bucket[$mir_id])) {
-			$bucket[$mir_id] = array();
+		if($mir_id !== $this->abroad_mir_id) {
+			$bucket = &$this->getBucket($candidate_id);
+			if (!isset($bucket[$mir_id])) {
+				$bucket[$mir_id] = array();
+			}
+			$bucket[$mir_id][$candidate_id] = 0;
 		}
-		$bucket[$mir_id][$candidate_id] = 0;
 	}
 
 	function voteProcessor($data) {
 		$mir_id = (int)$data[0];
 		$candidate_id = (int)$data[1];
 		$votes = (int)$data[2];
-		$is_party = in_array($candidate_id, $this->party_list); 
-		$bucket = &$this->getBucket($candidate_id);
-		$bucket[$mir_id][$candidate_id] = $votes;
+
+		if($mir_id !== $this->abroad_mir_id) {
+			$bucket = &$this->getBucket($candidate_id);
+			$bucket[$mir_id][$candidate_id] = $votes;
+			$this->addNum($this->mir_total_votes, $mir_id, $votes);
+		}
+
 		$this->total_votes += $votes;
+		$is_party = in_array($candidate_id, $this->party_list);
 		if ($is_party) {
 			$this->addNum($this->party_votes, $candidate_id, $votes);
 		}
-		$this->addNum($this->mir_total_votes, $mir_id, $votes);
 	}
 
 	function addNum(&$array, $id, $num) {
@@ -117,9 +123,6 @@ class Pe {
 
 		$this->processPartyProportionalMandates($hare_quota);
 
-		//remove abroad
-		unset($this->parties[$this->abroad_mir_id]);
-		
 		$this->generateHareTable();	
 
 		while (!$this->checkSolution()) {
