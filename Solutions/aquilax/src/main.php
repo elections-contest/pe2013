@@ -2,7 +2,7 @@
 <?php
 
 function usage($error_code) {
-	print("Usage: php pe.php files_path [result_filename]" . PHP_EOL);
+	print("Usage: php pe.php DIR [OUTPUT_FILENAME]" . PHP_EOL);
 	exit($error_code);
 }
 
