@@ -1,6 +1,4 @@
-#!/usr/bin/php
 <?php
-error_reporting(E_ALL);
 
 class Pe {
 
@@ -51,10 +49,10 @@ class Pe {
 	private $mir_total_votes = array();
 	private $parties_with_extra_mandates = array();
 
-	function start($path) {
+	function start($path, $result_filename) {
 		$this->loadData($path);
 		$this->processData();
-		$this->saveData();
+		$this->saveData($result_filename);
 	}
 
 	function loadData($path) {
@@ -351,20 +349,13 @@ class Pe {
 		}
 	}
 
-	function saveData() {
+	function saveData($result_filename) {
+		$filename = $result_filename ? $result_filename : 'php://stdout';
+		$fh = fopen($filename,'w') or die($php_errormsg);
 		foreach ($this->results as $result) {
-			printf("%d;%d;%d\n", $result[0], $result[1], $result[2]);
+			fputcsv($fh, $result, ';');
 		}
+		fclose($fh);
 	}
 
 }
-
-if (isset($argv[1]) && file_exists($argv[1])) {
-	$path = $argv[1]; //'../../../Tests/1/';
-	$pe = new Pe();
-	$pe->start($path);
-} else {
-	print("Usage: php pe.php files_path" . PHP_EOL);
-	exit(1);
-}
-?>
