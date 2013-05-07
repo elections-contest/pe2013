@@ -22,7 +22,7 @@ class Pe {
 	
 	private $hare_table = array();
 
-	private $prop_mandates = array();
+	private $proportional_mandates = array();
 	private $party_votes = array();
 	private $mir_total_votes = array();
 	private $sec_3_2_mandates = array();
@@ -110,7 +110,7 @@ class Pe {
 	function processData() {
 		$this->processIndependentCandidates();
 		$min_votes = (int)($this->total_votes * self::VOTE_BAREER);
-		
+
 		$this->removePartiesBelowMinVotesLimit($min_votes);
 
 		$hare_quota = $this->total_votes / $this->total_mandates;
@@ -186,12 +186,12 @@ class Pe {
 	}
 
 	function processPartyProportionalMandates($quota) {
-		$this->prop_mandates = array();
+		$this->proportional_mandates = array();
 		$remainders = array();
 		$pre_total_mandates = 0;
 		foreach ($this->party_votes as $party_id => $votes) {
 			$party_mandates = $votes / $quota;
-			$this->prop_mandates[$party_id] = (int)$party_mandates;
+			$this->proportional_mandates[$party_id] = (int)$party_mandates;
 			$pre_total_mandates += (int)$party_mandates;
 			$remainder = $party_mandates - (int)$party_mandates;
 			$remainders[$party_id] =  $remainder;
@@ -207,7 +207,7 @@ class Pe {
 					echo 'Достигнат жребий по Чл. 16.(6)'.PHP_EOL;
 					exit(3);
 				}
-				$this->prop_mandates[$party_id]++;
+				$this->proportional_mandates[$party_id]++;
 			}
 		}
 	}
@@ -271,8 +271,9 @@ class Pe {
 			}
 		}
 		foreach($agg as $party_id => $mandates) {
-			if ($this->prop_mandates[$party_id] != $mandates) {
-				if ($this->prop_mandates[$party_id] < $mandates) {
+			$prop_mandate = $this->proportional_mandates[$party_id];
+			if ($prop_mandate != $mandates) {
+				if ($prop_mandate < $mandates) {
 					$this->parties_with_extra_mandates[] = $party_id;
 				}
 				$result = FALSE;
