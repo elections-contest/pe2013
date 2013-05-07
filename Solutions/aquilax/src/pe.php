@@ -182,7 +182,7 @@ class Pe {
 				return $result;
 			}
 		}
-		return -1;
+		return FALSE;
 	}
 
 	function processPartyProportionalMandates($quota) {
@@ -202,7 +202,7 @@ class Pe {
 			arsort($remainders, SORT_NUMERIC);
 			for ($i = 0; $i < $remaining_mandates; $i++) {
 				$party_id = $this->getElement($remainders, $i, $remaining_mandates);
-				if ($party_id == -1) {
+				if ($party_id === FALSE) {
 					echo '0'.PHP_EOL;
 					echo 'Достигнат жребий по Чл. 16.(6)'.PHP_EOL;
 					exit(3);
@@ -247,7 +247,7 @@ class Pe {
 			arsort($parties, SORT_NUMERIC);
 			for ($i = 0; $i < $remaining; $i++) {
 				$party_id = $this->getElement($parties, $i, $remaining);
-				if ($party_id == -1) {
+				if ($party_id === FALSE) {
 					echo '0'.PHP_EOL;
 					echo 'Достигнат жребий по Чл. 21.(6)'.PHP_EOL;
 					exit(4);
