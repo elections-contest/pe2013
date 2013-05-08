@@ -6,7 +6,7 @@ C#. In addition to generating its main output file Result.txt, the
 application also prints intermediary information (in Bulgarian) to
 the standard output device.
 
-MandateCalculator е имплементация на описаната в
+MandateCalculator е реализация на описаната в
 https://www.cik.bg/f/105 Методика на ЦИК за определяне резултатите
 от гласуването за народни представители. Това е конзолно приложение,
 базирано на .NET Framework 3.5, а изходният му код е написан на C#.

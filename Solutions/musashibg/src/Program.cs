@@ -26,6 +26,8 @@ namespace MandateCalculator
 		{
 			try
 			{
+				// Входните данни се зареждат от файловете и се подават на обектът,
+				// който ще разпредели мандатите
 				var calculator = new MandateCalculator
 				{
 					Regions = ReadInput(RegionsFileName, RegionPattern, RegionFactory).ToDictionary(m => m.RegionId),
@@ -42,6 +44,9 @@ namespace MandateCalculator
 				}
 				catch (AmbiguityException ex)
 				{
+					// При достигане на ситуация, в която разпределението не може да бъде
+					// продължено, в Result.txt се записва на първия ред 0, а на следващия -
+					// описание на изключителната ситуация
 					using (var writer = new StreamWriter(ResultsFileName))
 					{
 						writer.WriteLine(0);
@@ -50,6 +55,8 @@ namespace MandateCalculator
 					throw;
 				}
 
+				// След като разпределението на мандатите е извършено, резултатите се записват
+				// в Result.txt
 				ConsoleHelper.WriteSectionCaption("Пълен списък на спечелените мандати");
 				using (var writer = new StreamWriter(ResultsFileName))
 				{
@@ -63,10 +70,26 @@ namespace MandateCalculator
 			}
 			catch (Exception ex)
 			{
+				// При възникнало изключение, съобщението му се извежда на стандартния
+				// изход и изпълнението се прекратява
 				ConsoleHelper.WriteError(ex);
 			}
 		}
 
+		/// <summary>
+		/// Помощен метод за зареждане на входни данни от файл.
+		/// </summary>
+		/// <typeparam name="T">Тип на входните данни.</typeparam>
+		/// <param name="fileName">Име на файла, от който да бъдат заредени
+		/// данните.</param>
+		/// <param name="linePattern">Регулярен израз, който се използва за
+		/// разпознаването на входните данни.</param>
+		/// <param name="itemFactory">Функция, която създава обект на базата
+		/// на разпознатите входни данни.</param>
+		/// <param name="optional">Указва дали изпълнението на приложението да
+		/// продължи, ако файлът не съществува. В такъв случай резултатната
+		/// колекция е празен.</param>
+		/// <returns>Колекция със заредените входни данни.</returns>
 		private static List<T> ReadInput<T>(string fileName, string linePattern, Func<Match, T> itemFactory, bool optional = false)
 		{
 			try
@@ -82,6 +105,7 @@ namespace MandateCalculator
 					string line = reader.ReadLine();
 					while (!string.IsNullOrEmpty(line))
 					{
+						// Текущият ред се разпознава с помощта на подадения регулярен израз
 						Match match = Regex.Match(line, linePattern);
 						if (!match.Success)
 						{
@@ -91,11 +115,9 @@ namespace MandateCalculator
 
 						try
 						{
-							if (match.Success)
-							{
-								T item = itemFactory(match);
-								items.Add(item);
-							}
+							// Създава се обект с данните от текущия ред и се добавя в резултатната колекция
+							T item = itemFactory(match);
+							items.Add(item);
 						}
 						catch (Exception ex)
 						{
@@ -119,6 +141,14 @@ namespace MandateCalculator
 			}
 		}
 
+		/// <summary>
+		/// Помощен метод за създаване на обект с информация за многомандатен
+		/// изборен район.
+		/// </summary>
+		/// <param name="match">Ред от MIRs.txt, разпознат с регулярен
+		/// израз.</param>
+		/// <returns>Обект със заредената информация за многомандатния изборен
+		/// район.</returns>
 		private static Region RegionFactory(Match match)
 		{
 			return new Region
@@ -129,6 +159,14 @@ namespace MandateCalculator
 			};
 		}
 
+		/// <summary>
+		/// Помощен метод за създаване на обект с информация за партия или
+		/// коалиция.
+		/// </summary>
+		/// <param name="match">Ред от Parties.txt, разпознат с регулярен
+		/// израз.</param>
+		/// <returns>Обект със заредената информация за
+		/// партията/коалицията.</returns>
 		private static Party PartyFactory(Match match)
 		{
 			return new Party
@@ -138,6 +176,12 @@ namespace MandateCalculator
 			};
 		}
 
+		/// <summary>
+		/// Помощен метод за създаване на обект с информация за кандидат.
+		/// </summary>
+		/// <param name="match">Ред от Candidates.txt, разпознат с регулярен
+		/// израз.</param>
+		/// <returns>Обект със заредената информация за кандидата.</returns>
 		private static Candidate CandidateFactory(Match match)
 		{
 			return new Candidate
@@ -149,16 +193,31 @@ namespace MandateCalculator
 			};
 		}
 
+		/// <summary>
+		/// Помощен метод за създаване на обект с информация за група от
+		/// действителни гласове.
+		/// </summary>
+		/// <param name="match">Ред от Votes.txt, разпознат с регулярен
+		/// израз.</param>
+		/// <returns>Обект със заредената информация за групата от действителни
+		/// гласове.</returns>
 		private static VoteBatch VoteBatchFactory(Match match)
 		{
 			return new VoteBatch
 			{
 				RegionId = int.Parse(match.Groups[1].Value),
 				PartyId = int.Parse(match.Groups[2].Value),
-				VoteCount = int.Parse(match.Groups[3].Value),
+				VoteCount = long.Parse(match.Groups[3].Value),
 			};
 		}
 
+		/// <summary>
+		/// Помощен метод за създаване на обект с информация за изтеглен жребий.
+		/// </summary>
+		/// <param name="match">Ред от Lots.txt, разпознат с регулярен
+		/// израз.</param>
+		/// <returns>Обект със заредената информация за изтегления
+		/// жребий.</returns>
 		private static Lot LotFactory(Match match)
 		{
 			return new Lot

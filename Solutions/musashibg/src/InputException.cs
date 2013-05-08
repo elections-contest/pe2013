@@ -2,6 +2,9 @@
 
 namespace MandateCalculator
 {
+	/// <summary>
+	/// Изключение, което се хвърля при невалидни входни данни.
+	/// </summary>
 	public class InputException : Exception
 	{
 		public InputException()

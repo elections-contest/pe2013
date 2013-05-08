@@ -2,6 +2,10 @@
 
 namespace MandateCalculator
 {
+	/// <summary>
+	/// Изключение, което се хвърля при достигната ситуация, в която
+	/// изчислението не може да бъде продължено.
+	/// </summary>
 	public class AmbiguityException : Exception
 	{
 		public AmbiguityException()
