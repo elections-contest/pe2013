@@ -1,14 +1,25 @@
 <?php
 
+/**
+ * Elections 2013 mandate calculation script
+ *
+ * @category   Government
+ * @package    pe2013
+ * @author     Evgeniy Vasilev <aquilax@gmail.com>
+ * @license    http://www.opensource.org/licenses/mit-license.html  MIT License
+ * @version    1.0
+ * @link       https://github.com/aquilax/pe2013
+ */
 class Pe {
-
 	/**
 	 * Filenames
 	 */
+
 	const MIR_FILENAME = "MIRs.txt";
 	const PARTIES_FILENAME = "Parties.txt";
 	const CANDIDATE_FILENAME = "Candidates.txt";
 	const VOTE_FILENAME = "Votes.txt";
+	const LOT_FILENAME = "Lot.txt";
 
 	/**
 	 * Vote barreer
@@ -39,31 +50,59 @@ class Pe {
 	 */
 	private $total_votes = 0;
 
+	/**
+	 * Basic data structures
+	 */
 	private $mirs = array();
 	private $party_list = array();
 	private $parties = array();
 	private $ind_candidates = array(); // independent candidates
+	private $lot = array();
 
+	/**
+	 * Supporting data structures
+	 */
 	private $proportional_mandates = array();
 	private $party_votes = array();
 	private $mir_total_votes = array();
 	private $parties_with_extra_mandates = array();
 
+	/**
+	 * Starts the whole calculation process
+	 * @param string $path Input data path
+	 * @param string $result_filename Output file name
+	 */
 	function start($path, $result_filename) {
 		$this->loadData($path);
 		$this->processData();
 		$this->saveData($result_filename);
 	}
 
+	/**
+	 * Load input files
+	 * @param string $path Input data path
+	 */
 	function loadData($path) {
 		$this->loader($path . self::MIR_FILENAME, 'mirProcessor');
 		$this->loader($path . self::PARTIES_FILENAME, 'partyProcessor');
 		$this->loader($path . self::CANDIDATE_FILENAME, 'candidateProcessor');
 		$this->loader($path . self::VOTE_FILENAME, 'voteProcessor');
+		$this->loader($path . self::VOTE_FILENAME, 'lotProcessor', FALSE);
 	}
 
-	function loader($filename, $processor) {
+	/**
+	 * Common CSV File loadre
+	 * @param strint $filename Input filename
+	 * @param string $processor Filename processor
+	 * @param boolean $mandatory Is the file mandatory
+	 * @return boolean True if file exists
+	 */
+	function loader($filename, $processor, $mandatory = TRUE) {
 		if (!file_exists($filename)) {
+			if (!$mandatory) {
+				// We can live without it
+				return FALSE;
+			}
 			printf("Cannot open file: %s" . PHP_EOL, $filename);
 			exit(2);
 		}
@@ -73,8 +112,13 @@ class Pe {
 			}
 			fclose($handle);
 		}
+		return TRUE;
 	}
 
+	/**
+	 * Processes the Mir file
+	 * @param array $data Input row of data
+	 */
 	function mirProcessor($data) {
 		$mir_id = (int) $data[0];
 		$mandates = (int) $data[2];
@@ -85,11 +129,20 @@ class Pe {
 		$this->total_mandates += $mandates;
 	}
 
+	/**
+	 * Processes the Parties file
+	 * @param array $data Input row of data
+	 */
 	function partyProcessor($data) {
 		$id = (int) $data[0];
 		$this->party_list[] = $id;
 	}
 
+	/**
+	 * Returns the proper data bucket for candidate (party or inie)
+	 * @param integer $candidate_id Candidate ID
+	 * @return arrray data bucket
+	 */
 	function &getBucket($candidate_id) {
 		if (in_array($candidate_id, $this->party_list)) {
 			return $this->parties;
@@ -97,6 +150,10 @@ class Pe {
 		return $this->ind_candidates;
 	}
 
+	/**
+	 * Processes the Candidates file
+	 * @param array $data Input row of data
+	 */
 	function candidateProcessor($data) {
 		$mir_id = (int) $data[0];
 		$candidate_id = (int) $data[1];
@@ -109,6 +166,10 @@ class Pe {
 		}
 	}
 
+	/**
+	 * Processes the Votes file
+	 * @param array $data Input row of data
+	 */
 	function voteProcessor($data) {
 		$mir_id = (int) $data[0];
 		$candidate_id = (int) $data[1];
@@ -128,6 +189,21 @@ class Pe {
 		}
 	}
 
+	/**
+	 * Processes the Lot file
+	 * @param array $data Input row of data
+	 */
+	function lotProcessor($data) {
+		$party_id = (int) $data[0];
+		$this->lot[] = $party_id;
+	}
+
+	/**
+	 * Add number to array key helper function
+	 * @param array $array Array
+	 * @param mixed $id Key
+	 * @param integer $num Number to add
+	 */
 	function addNum(&$array, $id, $num) {
 		if (!isset($array[$id])) {
 			$array[$id] = 0;
@@ -135,6 +211,9 @@ class Pe {
 		$array[$id] += $num;
 	}
 
+	/**
+	 * Main data crunching function
+	 */
 	function processData() {
 		$this->processIndependentCandidates();
 		$min_votes = (int) ($this->total_votes * self::VOTE_BAREER);
@@ -153,9 +232,13 @@ class Pe {
 		$this->populateResults();
 	}
 
+	/**
+	 * Process Independent candidates
+	 * @return boolean True if there are independent cancidates
+	 */
 	function processIndependentCandidates() {
 		if (count($this->ind_candidates) == 0) {
-			return;
+			return FALSE;
 		}
 		foreach ($this->ind_candidates as $mir_id => $candidates) {
 			$mirIQuota = (int) ($this->mir_total_votes[$mir_id] / $this->mirs[$mir_id]);
@@ -168,8 +251,13 @@ class Pe {
 				}
 			}
 		}
+		return TRUE;
 	}
 
+	/**
+	 * Remove parties with wotes below the VOTE_BAREER
+	 * @param integer $min_votes Minimum votes required
+	 */
 	function removePartiesBelowMinVotesLimit($min_votes) {
 		foreach ($this->party_votes as $party_id => $votes) {
 			if ($votes < $min_votes) {
@@ -188,28 +276,57 @@ class Pe {
 		}
 	}
 
-	function getElement(&$arr, $index, $total) {
+	/**
+	 * Returns the index-th element from an value sorted array, according to
+	 * CIK's rules
+	 * @param array $arr Associative array of parties and values
+	 * @param array $lot The Lot
+	 * @param integer $index Index of the element
+	 * @param intger $total Remaining numbers to check
+	 * @return mixed party_id or FALSE on failiure
+	 */
+	function getElement(&$arr, &$lot, $index, $total) {
+		// get party_id-s
 		$keys = array_keys($arr);
+		// remainders
 		$vals = array_values($arr);
+		// the natural result
 		$result = $keys[$index];
 		if (!isset($vals[$index + 1])) {
-			// No next element so no duplicates
+			// last element = no duplicates
 			return $result;
 		}
-		// No "next number" if total equals array length
-		if ($total >= count($vals)) {
-			$total = count($vals) - 1;
+		// parties to look for in the lot
+		// check the remaining remainders for duplicates
+		if ($vals[$index] != $vals[$total]) {
+			// if the first and the last elements differ we're good to go
+			return $result;
 		}
-		// Check remaining numbers for duplicates
-		for ($i = 1; $i < $total + 1; $i++) {
-			if ($vals[$index] != $vals[$index + $i]) {
-				// difference, return the resulting key
-				return $result;
+		// Check the lot
+		if ($lot) {
+			// fighting parties
+			$lot_keys = array_slice($keys, $index, $total - $index);
+			foreach ($lot as $party_id) {
+				// check the lot and return the first matching party
+				if (in_array($party_id, $lot_keys)) {
+					// rearrange the array (this is nasty)
+					$new_index = array_search($party_id, $keys);
+					$t = $keys[$new_index];
+					$keys[$index] = $keys[$new_index];
+					$keys[$new_index] = $t;
+					$arr = array_combine($keys, $vals);
+					return $party_id;
+				}
 			}
 		}
+		// All hope is lost. Call CIK
 		return FALSE;
 	}
 
+	/**
+	 * Calculates the proprtional mandates for parties
+	 * @param float $quota Hare's quota
+	 */
 	function processPartyProportionalMandates($quota) {
 		$this->proportional_mandates = array();
 		$remainders = array();
@@ -226,7 +343,7 @@ class Pe {
 			// Distribute remaining mandates
 			arsort($remainders, SORT_NUMERIC);
 			for ($i = 0; $i < $remaining_mandates; $i++) {
-				$party_id = $this->getElement($remainders, $i, $remaining_mandates);
+				$party_id = $this->getElement($remainders, $this->lot, $i, $remaining_mandates);
 				if ($party_id === FALSE) {
 					echo '0' . PHP_EOL;
 					echo 'Достигнат жребий по Чл. 16.(6)' . PHP_EOL;
@@ -237,6 +354,11 @@ class Pe {
 		}
 	}
 
+	/**
+	 * Returns the total votes for MIR
+	 * @param integer $mir_id Mir ID
+	 * @return integer
+	 */
 	function getMirTotalVotes($mir_id) {
 		$result = 0;
 		foreach ($this->parties[$mir_id] as $values) {
@@ -245,6 +367,9 @@ class Pe {
 		return $result;
 	}
 
+	/**
+	 * Generates Hare's table
+	 */
 	function generateHareTable() {
 		$pre_totals = array();
 		foreach ($this->parties as $mir_id => $parties) {
@@ -266,7 +391,7 @@ class Pe {
 			$remaining = $this->mirs[$mir_id] - $pre_totals[$mir_id];
 			arsort($parties, SORT_NUMERIC);
 			for ($i = 0; $i < $remaining; $i++) {
-				$party_id = $this->getElement($parties, $i, $remaining);
+				$party_id = $this->getElement($parties, $this->lot, $i, $remaining);
 				if ($party_id === FALSE) {
 					echo '0' . PHP_EOL;
 					echo 'Достигнат жребий по Чл. 21.(6)' . PHP_EOL;
@@ -277,8 +402,11 @@ class Pe {
 		}
 	}
 
+	/**
+	 * Check if the current solution is correct
+	 * @return boolean True if solution is correct
+	 */
 	function checkSolution() {
-		//print_r($this->parties);die();
 		$agg = array();
 		$result = TRUE;
 		$this->parties_with_extra_mandates = array();
@@ -302,6 +430,9 @@ class Pe {
 		return $result;
 	}
 
+	/**
+	 * Rearranges mandates according to Section 3.3
+	 */
 	function rearrangeMandates() {
 		$min_remainder = 1;
 		$min_party_id = 0;
@@ -326,6 +457,11 @@ class Pe {
 		$this->parties[$min_mir_id][$party_id][self::PRE_MANDATES_EXTRA] += 1; // increase extra mandate
 	}
 
+	/**
+	 * Returns the maximum remainder for MIR
+	 * @param integer $mir_id Mir ID
+	 * @return float The maximum remainder
+	 */
 	function getMaxRemainderForMir($mir_id) {
 		$max_remainder = 0;
 		$max_party_id = 0;
@@ -338,6 +474,9 @@ class Pe {
 		return $max_party_id;
 	}
 
+	/**
+	 * Populates the result array with parties mandates
+	 */
 	function populateResults() {
 		foreach ($this->parties as $mir_id => $parties) {
 			foreach ($parties as $party_id => $values) {
@@ -349,9 +488,13 @@ class Pe {
 		}
 	}
 
+	/**
+	 * Saves output data
+	 * @param string $result_filename Output filename or stdout if empty
+	 */
 	function saveData($result_filename) {
 		$filename = $result_filename ? $result_filename : 'php://stdout';
-		$fh = fopen($filename,'w') or die($php_errormsg);
+		$fh = fopen($filename, 'w') or die($php_errormsg);
 		foreach ($this->results as $result) {
 			fputcsv($fh, $result, ';');
 		}

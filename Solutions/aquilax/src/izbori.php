@@ -2,7 +2,11 @@
 <?php
 
 function usage($error_code) {
-	print("Usage: php pe.php DIR [OUTPUT_FILENAME]" . PHP_EOL);
+	echo "Elections 2013 Mandate Calculator.".PHP_EOL;
+	echo "This code is released under the MIT License.".PHP_EOL;
+	echo "For more information check the official contest page at:".PHP_EOL;
+	echo "\thttps://electionscontest.wordpress.com/".PHP_EOL.PHP_EOL;
+	printf("Usage: php %s DIR [OUTPUT_FILENAME]" . PHP_EOL, basename(__FILE__));
 	exit($error_code);
 }
 
