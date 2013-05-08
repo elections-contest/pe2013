@@ -296,7 +296,10 @@ class Pe {
 			// last element = no duplicates
 			return $result;
 		}
-		// parties to look for in the lot
+		// check if totals is exceeding the elements count
+		if ($total >= count($vals)) {
+			$total = count($vals)-1;
+		}
 		// check the remaining remainders for duplicates
 		if ($vals[$index] != $vals[$total]) {
 			// if the first and the last elements differ we're good to go
