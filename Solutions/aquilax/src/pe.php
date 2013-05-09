@@ -277,53 +277,52 @@ class Pe {
 	}
 
 	/**
-	 * Returns the index-th element from an value sorted array, according to
-	 * CIK's rules
-	 * @param array $arr Associative array of parties and values
-	 * @param array $lot The Lot
-	 * @param integer $index Index of the element
-	 * @param intger $total Remaining numbers to check
-	 * @return mixed party_id or FALSE on failiure
+	 * Sort helper function
+	 * @param array $a
+	 * @param array $b
+	 * @return int Compare result
 	 */
-	function getElement(&$arr, &$lot, $index, $total) {
-		// get party_id-s
-		$keys = array_keys($arr);
-		// remainders
+	function cikSort ($a, $b) {
+		if ($a[0] < $b[0]) {
+			return 1;
+		} elseif ($a[0] > $b[0]) {
+			return -1;
+		} else {
+			return $a[1] > $b[1] ? 1 : -1;
+		}
+	}
+
+	/**
+	 * Get $total properly sorted elements from array
+	 * @param array $arr Parties and coeficients
+	 * @param array $lot Lot
+	 * @param integer $total Total keys to return
+	 * @return mixed False if lot is required but empty, otherwise array
+	 */
+	function getElements($arr, $lot, $total) {
+		$size = count($arr);
+		arsort($arr); // sort values
 		$vals = array_values($arr);
-		// the natural result
-		$result = $keys[$index];
-		if (!isset($vals[$index + 1])) {
-			// last element = no duplicates
-			return $result;
+		$last = $total-1;
+		do {
+			$last++;
+		} while ($last < $size && $vals[$total-1] == $vals[$last]);
+		$slice = array_slice($arr, 0, $last);
+		if ($last == count(array_unique(array_values($slice)))) {
+			// it's all fine
+			return array_slice(array_keys($arr), 0, $total);
 		}
-		// check if totals is exceeding the elements count
-		if ($total >= count($vals)) {
-			$total = count($vals)-1;
+		// No lot
+		if (!$lot) {
+			return FALSE;
 		}
-		// check the remaining remainders for duplicates
-		if ($vals[$index] != $vals[$total]) {
-			// if the first and the last elements differ we're good to go
-			return $result;
+		$new = array();
+		foreach ($arr as $k => $v) {
+			$new[$k] = array($v, array_search($k, $lot));
 		}
-		// Check the lot
-		if ($lot) {
-			// fighting parties
-			$lot_keys = array_slice($keys, $index, $total - $index);
-			foreach ($lot as $party_id) {
-				// check the lot and return the first matching party
-				if (in_array($party_id, $lot_keys)) {
-					// rearrange the array (this is nasty)
-					$new_index = array_search($party_id, $keys);
-					$t = $keys[$new_index];
-					$keys[$index] = $keys[$new_index];
-					$keys[$new_index] = $t;
-					$arr = array_combine($keys, $vals);
-					return $party_id;
-				}
-			}
-		}
-		// All hope is lost. Call CIK
-		return FALSE;
+		uasort($new, 'self::cikSort');
+		// return the shiny new properly sorted keys
+		return array_slice(array_keys($new), 0, $total);
 	}
 
 	/**
@@ -344,14 +343,13 @@ class Pe {
 		$remaining_mandates = $this->total_mandates - $pre_total_mandates;
 		if ($remaining_mandates > 0) {
 			// Distribute remaining mandates
-			arsort($remainders, SORT_NUMERIC);
-			for ($i = 0; $i < $remaining_mandates; $i++) {
-				$party_id = $this->getElement($remainders, $this->lot, $i, $remaining_mandates);
-				if ($party_id === FALSE) {
-					echo '0' . PHP_EOL;
-					echo 'Достигнат жребий по Чл. 16.(6)' . PHP_EOL;
-					exit(3);
-				}
+			$parties = $this->getElements($remainders, $this->lot, $remaining_mandates);
+			if ($parties === FALSE) {
+				echo '0' . PHP_EOL;
+				echo 'Достигнат жребий по Чл. 16.(6)' . PHP_EOL;
+				exit(3);
+			}
+			foreach ($parties as $party_id) {
 				$this->proportional_mandates[$party_id]++;
 			}
 		}
@@ -391,15 +389,19 @@ class Pe {
 			}
 		}
 		foreach ($this->parties as $mir_id => $parties) {
-			$remaining = $this->mirs[$mir_id] - $pre_totals[$mir_id];
-			arsort($parties, SORT_NUMERIC);
-			for ($i = 0; $i < $remaining; $i++) {
-				$party_id = $this->getElement($parties, $this->lot, $i, $remaining);
-				if ($party_id === FALSE) {
-					echo '0' . PHP_EOL;
-					echo 'Достигнат жребий по Чл. 21.(6)' . PHP_EOL;
-					exit(4);
-				}
+			$remaining_mandates = $this->mirs[$mir_id] - $pre_totals[$mir_id];
+			$remainders = array();
+			foreach ($parties as $party_id => $values) {
+				$remainders[$party_id] = $values[self::HARE_REMAINDER];
+			};
+			// Distribute remaining mandates
+			$lparties = $this->getElements($remainders, $this->lot, $remaining_mandates);
+			if ($lparties === FALSE) {
+				echo '0' . PHP_EOL;
+				echo 'Достигнат жребий по Чл. 21.(6)' . PHP_EOL;
+				exit(3);
+			}
+			foreach ($lparties as $party_id) {
 				$this->parties[$mir_id][$party_id][self::PRE_MANDATES_EXTRA] = 1;
 			}
 		}
