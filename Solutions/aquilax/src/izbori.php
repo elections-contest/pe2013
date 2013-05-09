@@ -28,5 +28,5 @@ if ($result_filename && !is_writable($argv[2])) {
 
 require 'pe.php';
 
-$pe = new Pe();
+$pe = new Pe2013\Pe();
 $pe->start($path, $result_filename);

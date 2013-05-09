@@ -1,7 +1,8 @@
 <?php
-
 /**
- * Elections 2013 mandate calculation script
+ * Elections 2013 mandate calculation unit
+ *
+ * PHP Version 5
  *
  * @category   Government
  * @package    pe2013
@@ -10,15 +11,46 @@
  * @version    1.0
  * @link       https://github.com/aquilax/pe2013
  */
-class Pe {
-	/**
-	 * Filenames
-	 */
 
+namespace Pe2013;
+
+
+/**
+ * Elections 2013 mandate calculation class
+ *
+ * @category   Government
+ * @package    pe2013
+ * @author     Evgeniy Vasilev <aquilax@gmail.com>
+ * @license    http://www.opensource.org/licenses/mit-license.html  MIT License
+ * @version    1.0
+ * @link       https://github.com/aquilax/pe2013
+ */
+
+class Pe {
+
+	/**
+	 * Mirs filename
+	 */
 	const MIR_FILENAME = "MIRs.txt";
+
+	/**
+	 * Parties filename
+	 */
 	const PARTIES_FILENAME = "Parties.txt";
+
+	/**
+	 * Candidates filename
+	 */
 	const CANDIDATE_FILENAME = "Candidates.txt";
+
+	/**
+	 * Votes filename
+	 */
 	const VOTE_FILENAME = "Votes.txt";
+
+	/**
+	 * Lot filename
+	 */
 	const LOT_FILENAME = "Lot.txt";
 
 	/**
@@ -27,26 +59,45 @@ class Pe {
 	const VOTE_BAREER = 0.04;
 
 	/**
-	 * Party value offsets
+	 * Remainder round to
+	 */
+	const REMAINDER_ROUND = 6;
+
+	/**
+	 * Votes offset
 	 */
 	const VOTES = 0;
+
+	/**
+	 * Base pre-mandates
+	 */
 	const PRE_MANDATES_BASE = 1;
+
+	/**
+	 * Extra pre-mandates
+	 */
 	const PRE_MANDATES_EXTRA = 2;
+
+	/**
+	 * Hare remainders
+	 */
 	const HARE_REMAINDER = 3;
 
 	/**
 	 * Abroad mir id
-	 * @var int
+	 * @var integer
 	 */
 	private $abroad_mir_id = 0;
 
 	/**
 	 * Total mandates counter
+	 * @var integer
 	 */
 	private $total_mandates = 0;
 
 	/**
 	 * Total votes counter
+	 * @var integer
 	 */
 	private $total_votes = 0;
 
@@ -54,17 +105,57 @@ class Pe {
 	 * Basic data structures
 	 */
 	private $mirs = array();
+
+	/**
+	 * List of parties
+	 * @var array
+	 */
 	private $party_list = array();
+
+	/**
+	 * Parties structure
+	 * @var array
+	 */
 	private $parties = array();
-	private $ind_candidates = array(); // independent candidates
+
+	/**
+	 * Independent candidates
+	 * @var array
+	 */
+	private $ind_candidates = array();
+
+	/**
+	 *	Lot
+	 * @var array
+	 */
 	private $lot = array();
 
 	/**
 	 * Supporting data structures
 	 */
+
+	/**
+	 * Proprional mandates list
+	 * @var array
+	 */
 	private $proportional_mandates = array();
+
+	/**
+	 * Votes per party
+	 * @var array
+	 */
 	private $party_votes = array();
+
+	/**
+	 * Votes per MIR
+	 * @var array
+	 */
 	private $mir_total_votes = array();
+
+	/**
+	 * Parties with extra mandates
+	 * @var array
+	 */
 	private $parties_with_extra_mandates = array();
 
 	/**
@@ -326,6 +417,15 @@ class Pe {
 	}
 
 	/**
+	 * Calculate remainder as int
+	 * @param float $float Number
+	 * @return integer Remainder
+	 */
+	function remainder($float) {
+		return (int)(($float - (int)$float) * pow(10, self::REMAINDER_ROUND));
+	}
+
+	/**
 	 * Calculates the proprtional mandates for parties
 	 * @param float $quota Hare's quota
 	 */
@@ -337,7 +437,7 @@ class Pe {
 			$party_mandates = $votes / $quota;
 			$this->proportional_mandates[$party_id] = (int) $party_mandates;
 			$pre_total_mandates += (int) $party_mandates;
-			$remainder = $party_mandates - (int) $party_mandates;
+			$remainder = $this->remainder($party_mandates);
 			$remainders[$party_id] = $remainder;
 		}
 		$remaining_mandates = $this->total_mandates - $pre_total_mandates;
@@ -385,7 +485,7 @@ class Pe {
 				$this->parties[$mir_id][$party_id][self::PRE_MANDATES_EXTRA] = 0; // Extra mandates
 				$pre_totals[$mir_id] += (int) $mandates;
 
-				$this->parties[$mir_id][$party_id][self::HARE_REMAINDER] = $mandates - (int) $mandates;
+				$this->parties[$mir_id][$party_id][self::HARE_REMAINDER] = $this->remainder($mandates);
 			}
 		}
 		foreach ($this->parties as $mir_id => $parties) {
@@ -439,7 +539,7 @@ class Pe {
 	 * Rearranges mandates according to Section 3.3
 	 */
 	function rearrangeMandates() {
-		$min_remainder = 1;
+		$min_remainder = PHP_INT_MAX;
 		$min_party_id = 0;
 		$min_mir_id = 0;
 		foreach ($this->parties as $mir_id => $parties) {

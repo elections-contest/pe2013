@@ -2,3 +2,5 @@ Usage: php izbori.php DIR [OUTPUT_FILENAME]
 
 DIR is mandatory and contains the path the the input files.
 If OUTPUT_FILENAME is empty the result is routed to stdout
+
+To generate class documentation start make doc. Requires phpdoc.
