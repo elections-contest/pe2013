@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 doc: clean
-	phpdoc run --title pe2013 -f ./src/pe.php -t doc
+	phpdoc run --visibility=public,protected,private  --title pe2013 -f ./src/pe.php -t doc
 
 clean:
 	rm -rf doc/*

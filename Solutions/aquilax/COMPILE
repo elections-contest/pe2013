@@ -1,3 +1,7 @@
+Usage: sh start.sh
+
+OR
+
 Usage: php izbori.php DIR [OUTPUT_FILENAME]
 
 DIR is mandatory and contains the path the the input files.
