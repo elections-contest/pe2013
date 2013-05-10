@@ -7,4 +7,4 @@ clean:
 	rm -rf doc/*
 
 test:
-	diff -s <(src/izbori.php ../../Tests/1/) ../../Tests/1/Result.txt
+	diff -s <(php src/izbori.php ../../Tests/1/) ../../Tests/1/Result.txt
