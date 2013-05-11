@@ -1,0 +1,9 @@
+Visual Studio 2012 with .NET 4.5 is required for compilation(Visual Studio 2012 Professional+ is required for the unit tests).
+You should open the ElectionsMandateCalculator.sln solution file and build.Nuget packages will be downloaded on build. 
+- ElectionsMandateCalculator.prj is the main project that is a console application
+- ElectionsMandateCalculatorTests contains unit tests
+
+За компилирането на проекта е необходимо Visual Studio 2012 с .NET 4.5, като за Unit Test-овете е необходимо (Professional или по-висока версия)
+За компилацията трябва да се отвори solution файла ElectionsMandateCalculator.sln и да се build-не. Nuget пакетите ще се свалят автоматично при build-а.
+- Проектът ElectionsMandateCalculator.prj е главният проект, който прави изчислението на мандатите. Той представлява конзолно приложение
+- Проектът ElectionsMandateCalculatorTests съдържа Unit Test-ове
