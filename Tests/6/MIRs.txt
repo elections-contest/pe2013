@@ -1,0 +1,26 @@
+﻿1;"Piemonte 1";24
+2;"Piemonte 2";22
+3;"Lombardia 1";40
+4;"Lombardia 2";43
+5;"Lombardia 3";15
+6;"Alto Adige";10
+7;"Veneto 1";29
+8;"Veneto 2";20
+9;"Venezia Giulia";13
+10;"Liguria";17
+11;"Romagna";43
+12;"Toscana";38
+13;"Umbria";9
+14;"Marche";16
+15;"Lazio 1";40
+16;"Lazio 2";15
+17;"Abruzzi";14
+18;"Molise";3
+19;"Campania 1";33
+20;"Campania 2";29
+21;"Puglia";44
+22;"Basilicata";6
+23;"Calabria";22
+24;"Sicilia 1";26
+25;"Sicilia 2";28
+26;"Sardegna";18
