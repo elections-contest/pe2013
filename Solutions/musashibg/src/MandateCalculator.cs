@@ -545,6 +545,9 @@ namespace MandateCalculator
 				{
 					minAssignment = FindMinAdditionalMandateAssignment(overassignedPartyIds, ignoredRegionIds);
 
+					if (minAssignment == null)
+						throw new AmbiguityException("Не съществува остатък, който да удовлетворява условията по чл. 24.");
+
 					Console.WriteLine("Намерен разпределен допълнителен мандат за най-малък остатък:");
 					Console.WriteLine("Номер на МИР:             {0}", minAssignment.RegionId);
 					ConsoleHelper.WriteObject(minAssignment);
