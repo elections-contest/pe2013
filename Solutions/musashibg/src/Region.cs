@@ -131,16 +131,13 @@ namespace MandateCalculator
 		/// коалиция, на която може да бъде разпределен допълнителен мандат в
 		/// многомандатния изборен район (по чл. 27).
 		/// </summary>
-		/// <param name="partyIds">Колекция от номера на партии и коалиции,
-		/// на които трябва да бъдат разпределени един или повече допълнителни
-		/// мандати.</param>
-		/// <returns>Истина, ако на поне една от подадените партии и коалиции
-		/// може да бъде разпределен допълнителен мандат в многомандатния
-		/// изборен район.</returns>
-		public bool CheckCanAssignAdditionalMandate(HashSet<int> partyIds)
+		/// <returns>Истина, ако на поне една партия или коалиция може да бъде
+		/// разпределен допълнителен мандат в многомандатния изборен
+		/// район.</returns>
+		public bool CheckCanAssignAdditionalMandate()
 		{
 			return MandateAssignments
-				.Any(kv => partyIds.Contains(kv.Key) && !kv.Value.AdditionalMandate);
+				.Any(kv => !kv.Value.AdditionalMandate && !kv.Value.AlreadyAdjusted);
 		}
 
 		/// <summary>
