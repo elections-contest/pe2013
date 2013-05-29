@@ -531,11 +531,10 @@ namespace MandateCalculator
 		{
 			ConsoleHelper.WriteSectionCaption("Преразпределяне на допълнителните мандати на партии и коалиции в многомандатните избирателни райони (по чл. 22 - 27)");
 
-			HashSet<int> underassignedPartyIds;
 			HashSet<int> overassignedPartyIds;
 			var ignoredRegionIds = new HashSet<int>();
 
-			while (FindAssignmentsToAdjust(out underassignedPartyIds, out overassignedPartyIds))
+			while (FindAssignmentsToAdjust(out overassignedPartyIds))
 			{
 				MandateAssignment minAssignment;
 				Region region;
@@ -545,6 +544,9 @@ namespace MandateCalculator
 				{
 					minAssignment = FindMinAdditionalMandateAssignment(overassignedPartyIds, ignoredRegionIds);
 
+					if (minAssignment == null)
+						throw new AmbiguityException("Не съществува остатък, който да удовлетворява условията по чл. 24.");
+
 					Console.WriteLine("Намерен разпределен допълнителен мандат за най-малък остатък:");
 					Console.WriteLine("Номер на МИР:             {0}", minAssignment.RegionId);
 					ConsoleHelper.WriteObject(minAssignment);
@@ -553,7 +555,7 @@ namespace MandateCalculator
 
 					// Ако не е намерена партия, на която може да бъде преразпределен допълнителен мандат
 					// в този МИР, районът се изключва от преразпределянето (по чл. 26)
-					if (!region.CheckCanAssignAdditionalMandate(underassignedPartyIds))
+					if (!region.CheckCanAssignAdditionalMandate())
 					{
 						ignoredRegionIds.Add(region.RegionId);
 						region = null;
@@ -582,32 +584,23 @@ namespace MandateCalculator
 		/// преразпределение на допълнителните мандати в многомандатните
 		/// изборни райони (по чл. 22 - 27).
 		/// </summary>
-		/// <param name="underassignedPartyIds">Колекция от номерата на всички
-		/// партии, получили по-малко от определения на национално ниво брой
-		/// мандати.</param>
 		/// <param name="overassignedPartyIds">Колекция от номерата на всички
 		/// партии, получили повече от определения на национално ниво брой
 		/// мандати.</param>
 		/// <returns>Истина, ако са открити партии, за които се налага
 		/// преразпределение на допълнителни мандати в многомандатните изборни
 		/// райони.</returns>
-		private bool FindAssignmentsToAdjust(out HashSet<int> underassignedPartyIds, out HashSet<int> overassignedPartyIds)
+		private bool FindAssignmentsToAdjust(out HashSet<int> overassignedPartyIds)
 		{
-			underassignedPartyIds = new HashSet<int>();
 			overassignedPartyIds = new HashSet<int>();
 
 			foreach (Party party in Parties.Values)
 			{
-				int assignedMandateCount = party.GetAssignedMandateCount();
-				if (assignedMandateCount < party.NationalMandateCount)
-					underassignedPartyIds.Add(party.PartyId);
-				else if (assignedMandateCount > party.NationalMandateCount)
+				if (party.GetAssignedMandateCount() > party.NationalMandateCount)
 					overassignedPartyIds.Add(party.PartyId);
 			}
 
-			// Ако няма партии, получили по-малко от очаквания брой мандати,
-			// то няма да има и такива, получили повече от очаквания брой
-			return underassignedPartyIds.Count > 0;
+			return overassignedPartyIds.Count > 0;
 		}
 
 		/// <summary>
